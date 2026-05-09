@@ -84,7 +84,7 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
       return callData;
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["active-call"] }); },
-    onError: (error: any) => { toast.error("Failed to initiate call"); queryClient.setQueryData(["active-call"], null); stopMediaStream(); },
+    onError: () => { toast.error("Failed to initiate call"); queryClient.setQueryData(["active-call"], null); stopMediaStream(); },
   });
 
   const { mutate: acceptTheCall, isPending: isAcceptPending } = useMutation({
