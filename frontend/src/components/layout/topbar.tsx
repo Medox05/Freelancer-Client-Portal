@@ -66,51 +66,9 @@ export default function Topbar() {
   const logoutButtonClass =
     "relative cursor-pointer flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-300 bg-white text-slate-700 shadow-sm transition-all duration-200 hover:border-red-500 hover:bg-red-50 hover:text-red-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-red-500 dark:hover:bg-red-500/10 dark:hover:text-red-400";
 
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      let targetUrl = location.pathname;
-      // If they are on the dashboard, default to searching projects
-      if (targetUrl === "/" || targetUrl === "/client") {
-        targetUrl = isClient ? "/client/projects" : "/projects";
-      }
-      
-      const queryStr = searchQuery.trim();
-      if (queryStr) {
-        navigate(`${targetUrl}?search=${encodeURIComponent(queryStr)}`);
-      } else {
-        navigate(`${targetUrl}`);
-      }
-    }
-  };
-
   return (
-    <header className="flex items-center justify-between border-b border-slate-200 px-8 py-4 dark:border-slate-800">
-      <div className="w-full max-w-xl">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            className="w-full rounded-2xl border border-slate-300 bg-slate-50 py-3 pl-12 pr-4 text-slate-900 outline-none placeholder:text-slate-400 dark:border-slate-800 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500"
-          />
-          <svg
-            className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <circle cx="11" cy="11" r="6" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
-        </div>
-      </div>
-
-      <div className="ml-6 flex items-center gap-4">
+    <header className="flex items-center justify-end border-b border-slate-200 px-8 py-4 dark:border-slate-800">
+      <div className="flex items-center gap-4">
         <div className="group relative">
   <button onClick={toggleTheme} className={buttonClass} type="button">
     <ThemeToggle />
