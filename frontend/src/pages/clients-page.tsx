@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Mail,
@@ -11,7 +11,6 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useSearchParams } from "react-router-dom";
 import Modal from "../components/ui/modal";
 import {
   createClient,
@@ -57,12 +56,7 @@ const emptyForm: FormState = {
 export default function ClientsPage() {
   const queryClient = useQueryClient();
 
-  const [searchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-
-  useEffect(() => {
-    setSearch(searchParams.get("search") || "");
-  }, [searchParams]);
+  const [search, setSearch] = useState("");
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientItem | null>(null);
@@ -165,7 +159,7 @@ export default function ClientsPage() {
       setDeleteTarget(null);
       toast.success("Client deleted successfully");
     },
-    onError: (err: any) => {
+    onError: () => {
       setDeleteTarget(null);
       toast.error("Failed to delete client");
     },
@@ -177,7 +171,7 @@ export default function ClientsPage() {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       toast.success("Invitation resent successfully");
     },
-    onError: (err: any) => {
+    onError: () => {
       toast.error("Failed to resend invitation");
     },
   });

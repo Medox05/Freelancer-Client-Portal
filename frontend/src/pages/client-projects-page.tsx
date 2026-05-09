@@ -1,7 +1,7 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Eye, FolderKanban, Search } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { getProjects } from "../services/project-service";
 
 type Project = {
@@ -86,12 +86,7 @@ function getProgress(status: Project["status"]) {
 }
 
 export default function ClientProjectsPage() {
-  const [searchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-
-  useEffect(() => {
-    setSearch(searchParams.get("search") || "");
-  }, [searchParams]);
+  const [search, setSearch] = useState("");
 
   const {
     data,

@@ -102,19 +102,19 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
       if (data?.caller_id) fallbackCall(data.caller_id);
       queryClient.invalidateQueries({ queryKey: ["active-call"] });
     },
-    onError: (error: any) => { toast.error("Failed to accept call"); },
+    onError: () => { toast.error("Failed to accept call"); },
   });
 
   const { mutate: rejectTheCall, isPending: isRejectPending } = useMutation({
     mutationFn: (callId: number) => rejectCall(callId),
     onMutate: () => { queryClient.setQueryData(["active-call"], null); stopMediaStream(); },
-    onError: (error: any) => { toast.error("Failed to reject call"); },
+    onError: () => { toast.error("Failed to reject call"); },
   });
 
   const { mutate: endTheCall, isPending: isEndPending } = useMutation({
     mutationFn: (callId: number) => endCall(callId),
     onMutate: () => { queryClient.setQueryData(["active-call"], null); stopMediaStream(); },
-    onError: (error: any) => { toast.error("Failed to end call"); },
+    onError: () => { toast.error("Failed to end call"); },
   });
 
   const { data: activeCalls } = useQuery({
@@ -157,7 +157,7 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      remoteVideoContainerRef.current?.requestFullscreen().catch(err => {
+      remoteVideoContainerRef.current?.requestFullscreen().catch(() => {
         // Failed to enable fullscreen
       });
     } else {

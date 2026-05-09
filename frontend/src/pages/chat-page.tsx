@@ -134,15 +134,11 @@ export default function ChatPage() {
     location.pathname === "/client/chat" ||
     location.pathname.startsWith("/client/chat");
 
-  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
-
-  useEffect(() => {
-    setSearch(searchParams.get("search") || "");
-  }, [searchParams]);
 
   const conversationIdFromUrl = Number(searchParams.get("conversation")) || null;
 

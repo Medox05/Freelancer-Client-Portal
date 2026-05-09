@@ -1,8 +1,8 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import Select from "react-select";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DollarSign, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import DatePicker from "../components/ui/date-picker";
@@ -276,12 +276,7 @@ export default function ProjectsPage() {
 
   const currentUser = getStoredUser();
 
-  const [searchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-
-  useEffect(() => {
-    setSearch(searchParams.get("search") || "");
-  }, [searchParams]);
+  const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [form, setForm] = useState<FormState>(initialForm);
@@ -309,7 +304,7 @@ export default function ProjectsPage() {
       closeForm();
       toast.success("Project created successfully.");
     },
-    onError: (error: any) => {
+    onError: () => {
       toast.error("Failed to create project.");
     },
   });
@@ -322,7 +317,7 @@ export default function ProjectsPage() {
       closeForm();
       toast.success("Project updated successfully.");
     },
-    onError: (error: any) => {
+    onError: () => {
       toast.error("Failed to update project.");
     },
   });
@@ -333,7 +328,7 @@ export default function ProjectsPage() {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Project deleted successfully.");
     },
-    onError: (error: any) => {
+    onError: () => {
       toast.error("Failed to delete project.");
     },
   });

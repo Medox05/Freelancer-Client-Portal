@@ -44,7 +44,7 @@ export function usePeerJS({ userId, onRemoteStream, onDataMessage, onCallReceive
       setupDataConnection(conn);
     });
 
-    newPeer.on("error", (err) => {
+    newPeer.on("error", () => {
       // PeerJS error
     });
 
