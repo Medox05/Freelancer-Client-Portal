@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import Select from "react-select";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DollarSign, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import DatePicker from "../components/ui/date-picker";
@@ -276,7 +276,8 @@ export default function ProjectsPage() {
 
   const currentUser = getStoredUser();
 
-  const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [form, setForm] = useState<FormState>(initialForm);
