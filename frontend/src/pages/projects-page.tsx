@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Select from "react-select";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DollarSign, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
@@ -278,6 +278,13 @@ export default function ProjectsPage() {
 
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
+
+  useEffect(() => {
+    const query = searchParams.get("search");
+    if (query !== null) {
+      setSearch(query);
+    }
+  }, [searchParams]);
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [form, setForm] = useState<FormState>(initialForm);
