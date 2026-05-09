@@ -90,10 +90,7 @@ export default function ClientProjectsPage() {
   const [search, setSearch] = useState(searchParams.get("search") || "");
 
   useEffect(() => {
-    const query = searchParams.get("search");
-    if (query !== null) {
-      setSearch(query);
-    }
+    setSearch(searchParams.get("search") || "");
   }, [searchParams]);
 
   const {

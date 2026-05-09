@@ -69,9 +69,19 @@ export default function Topbar() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && searchQuery.trim()) {
-      const targetUrl = isClient ? "/client/projects" : "/projects";
-      navigate(`${targetUrl}?search=${encodeURIComponent(searchQuery.trim())}`);
+    if (e.key === "Enter") {
+      let targetUrl = location.pathname;
+      // If they are on the dashboard, default to searching projects
+      if (targetUrl === "/" || targetUrl === "/client") {
+        targetUrl = isClient ? "/client/projects" : "/projects";
+      }
+      
+      const queryStr = searchQuery.trim();
+      if (queryStr) {
+        navigate(`${targetUrl}?search=${encodeURIComponent(queryStr)}`);
+      } else {
+        navigate(`${targetUrl}`);
+      }
     }
   };
 
@@ -81,7 +91,7 @@ export default function Topbar() {
         <div className="relative">
           <input
             type="text"
-            placeholder="Search projects..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleSearchKeyDown}

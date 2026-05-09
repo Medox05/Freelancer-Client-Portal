@@ -280,10 +280,7 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState(searchParams.get("search") || "");
 
   useEffect(() => {
-    const query = searchParams.get("search");
-    if (query !== null) {
-      setSearch(query);
-    }
+    setSearch(searchParams.get("search") || "");
   }, [searchParams]);
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
