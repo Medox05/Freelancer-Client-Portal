@@ -24,16 +24,25 @@ export function usePeerJS({ userId, onRemoteStream, onDataMessage, onCallReceive
   useEffect(() => {
     if (!userId) return;
     const newPeer = new Peer(`mhflow-user-${userId}`, {
-      debug: 1,
+      debug: 0,
+      host: "peerjs-server.herokuapp.com" || "0.peerjs.com",
+      secure: true,
+      port: 443,
       config: {
         iceServers: [
           { urls: "stun:stun.l.google.com:19302" },
           { urls: "stun:stun1.l.google.com:19302" },
+          { urls: "stun:stun2.l.google.com:19302" },
+          { urls: "stun:stun3.l.google.com:19302" },
+          { urls: "stun:stun4.l.google.com:19302" },
         ],
       },
     });
 
-    newPeer.on("open", () => setPeer(newPeer));
+    newPeer.on("open", () => {
+      setPeer(newPeer);
+      setMediaError(null);
+    });
 
     newPeer.on("call", (call) => {
       currentCallRef.current = call;
@@ -44,8 +53,15 @@ export function usePeerJS({ userId, onRemoteStream, onDataMessage, onCallReceive
       setupDataConnection(conn);
     });
 
-    newPeer.on("error", () => {
-      // PeerJS error
+    newPeer.on("error", (err) => {
+      console.error("PeerJS Error:", err);
+      if (err.type === "unavailable-id") {
+        setMediaError("Failed to connect. Please refresh the page.");
+      } else if (err.type === "peer-unavailable") {
+        setMediaError("The other user is not available.");
+      } else if (err.type === "network") {
+        setMediaError("Network error. Check your connection.");
+      }
     });
 
     return () => {
@@ -112,19 +128,37 @@ export function usePeerJS({ userId, onRemoteStream, onDataMessage, onCallReceive
   }, []);
 
   const callPeer = useCallback(async (calleeUserId: number) => {
-    if (!peer) return;
+    if (!peer) {
+      setMediaError("PeerJS not ready. Please refresh the page.");
+      return;
+    }
     const stream = await startMediaStream();
-    if (!stream) return; // aborted or failed
+    if (!stream) return;
     
-    const peerId = `mhflow-user-${calleeUserId}`;
-    // Open data connection
-    const conn = peer.connect(peerId);
-    setupDataConnection(conn);
-    // If we have a stream, call with video
-    const call = peer.call(peerId, stream);
-    currentCallRef.current = call;
-    call.on("stream", (remoteStream: MediaStream) => onRemoteStream(remoteStream));
-    call.on("close", () => stopMediaStream());
+    try {
+      const peerId = `mhflow-user-${calleeUserId}`;
+      // Open data connection
+      const conn = peer.connect(peerId);
+      setupDataConnection(conn);
+      
+      // If we have a stream, call with video
+      const call = peer.call(peerId, stream);
+      if (!call) {
+        setMediaError("Failed to initiate call. Please try again.");
+        return;
+      }
+      currentCallRef.current = call;
+      call.on("stream", (remoteStream: MediaStream) => onRemoteStream(remoteStream));
+      call.on("error", (err) => {
+        console.error("Call error:", err);
+        setMediaError("Call connection failed. Please try again.");
+      });
+      call.on("close", () => stopMediaStream());
+    } catch (err) {
+      console.error("callPeer error:", err);
+      setMediaError("Failed to start call. Please try again.");
+      stopMediaStream();
+    }
   }, [peer, startMediaStream, stopMediaStream, onRemoteStream, setupDataConnection]);
 
   const answerCall = useCallback(async () => {
@@ -137,10 +171,13 @@ export function usePeerJS({ userId, onRemoteStream, onDataMessage, onCallReceive
     }
     currentCallRef.current.on("stream", (remoteStream: MediaStream) => onRemoteStream(remoteStream));
     currentCallRef.current.on("close", () => stopMediaStream());
-    // Send acceptance signal
-    if (dataConnRef.current?.open) {
-      dataConnRef.current.send({ type: "CALL_ACCEPTED" });
-    }
+    
+    // Wait for data connection to be established before sending acceptance signal
+    setTimeout(() => {
+      if (dataConnRef.current?.open) {
+        dataConnRef.current.send({ type: "CALL_ACCEPTED" });
+      }
+    }, 500);
   }, [startMediaStream, stopMediaStream, onRemoteStream]);
 
   const toggleCamera = useCallback(() => {
