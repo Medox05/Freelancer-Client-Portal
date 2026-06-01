@@ -51,7 +51,7 @@ class VideoCallController extends Controller
 
         // Auto-expire old ringing calls to prevent getting stuck
         VideoCall::where('status', 'ringing')
-            ->where('created_at', '<', \Illuminate\Support\Facades\DB::raw('DATE_SUB(NOW(), INTERVAL 60 SECOND)'))
+            ->where('created_at', '<', \Illuminate\Support\Facades\DB::raw('DATE_SUB(NOW(), INTERVAL 120 SECOND)'))
             ->where(function ($query) use ($caller, $validated) {
                 $query->where('caller_id', $caller->id)
                     ->orWhere('callee_id', $caller->id)
@@ -76,12 +76,18 @@ class VideoCallController extends Controller
         // Cleanup ghost accepted calls if a participant went offline
         if ($existingCall && $existingCall->status === 'accepted') {
             $threshold = now()->subMinutes(2);
-            $callerOffline = !$existingCall->caller || !$existingCall->caller->last_seen_at || \Carbon\Carbon::parse($existingCall->caller->last_seen_at)->lt($threshold);
-            $calleeOffline = !$existingCall->callee || !$existingCall->callee->last_seen_at || \Carbon\Carbon::parse($existingCall->callee->last_seen_at)->lt($threshold);
+            // Only end call if both users exist AND both have been seen recently
+            $callerExists = $existingCall->caller && $existingCall->caller->last_seen_at;
+            $calleeExists = $existingCall->callee && $existingCall->callee->last_seen_at;
+            
+            if ($callerExists && $calleeExists) {
+                $callerOffline = \Carbon\Carbon::parse($existingCall->caller->last_seen_at)->lt($threshold);
+                $calleeOffline = \Carbon\Carbon::parse($existingCall->callee->last_seen_at)->lt($threshold);
 
-            if ($callerOffline || $calleeOffline) {
-                $existingCall->update(['status' => 'ended', 'ended_at' => now()]);
-                $existingCall = null;
+                if ($callerOffline || $calleeOffline) {
+                    $existingCall->update(['status' => 'ended', 'ended_at' => now()]);
+                    $existingCall = null;
+                }
             }
         }
 
@@ -180,9 +186,9 @@ class VideoCallController extends Controller
     {
         $user = $request->user();
 
-        // Auto-expire old ringing calls (older than 60 seconds)
+        // Auto-expire old ringing calls (older than 120 seconds = 2 minutes)
         VideoCall::where('status', 'ringing')
-            ->where('created_at', '<', \Illuminate\Support\Facades\DB::raw('DATE_SUB(NOW(), INTERVAL 60 SECOND)'))
+            ->where('created_at', '<', \Illuminate\Support\Facades\DB::raw('DATE_SUB(NOW(), INTERVAL 120 SECOND)'))
             ->where(function ($query) use ($user) {
                 $query->where('caller_id', $user->id)
                     ->orWhere('callee_id', $user->id);
@@ -203,17 +209,24 @@ class VideoCallController extends Controller
             ->latest()
             ->first();
 
-        if ($call && $call->status === 'accepted') {
+        // Only check for offline users if call is accepted AND has been ongoing for at least 30 seconds
+        if ($call && $call->status === 'accepted' && $call->started_at && now()->diffInSeconds(\Carbon\Carbon::parse($call->started_at)) >= 30) {
             $threshold = now()->subMinutes(2);
-            $callerOffline = !$call->caller || !$call->caller->last_seen_at || \Carbon\Carbon::parse($call->caller->last_seen_at)->lt($threshold);
-            $calleeOffline = !$call->callee || !$call->callee->last_seen_at || \Carbon\Carbon::parse($call->callee->last_seen_at)->lt($threshold);
+            // Only end call if both users exist AND both have been seen recently
+            $callerExists = $call->caller && $call->caller->last_seen_at;
+            $calleeExists = $call->callee && $call->callee->last_seen_at;
+            
+            if ($callerExists && $calleeExists) {
+                $callerOffline = \Carbon\Carbon::parse($call->caller->last_seen_at)->lt($threshold);
+                $calleeOffline = \Carbon\Carbon::parse($call->callee->last_seen_at)->lt($threshold);
 
-            if ($callerOffline || $calleeOffline) {
-                $call->update([
-                    'status' => 'ended',
-                    'ended_at' => now(),
-                ]);
-                $call->status = 'ended';
+                if ($callerOffline || $calleeOffline) {
+                    $call->update([
+                        'status' => 'ended',
+                        'ended_at' => now(),
+                    ]);
+                    $call->status = 'ended';
+                }
             }
         }
 

@@ -23,7 +23,11 @@ export default function VideoCallPage() {
   }, []);
 
   const { data: availableUsers = [], isLoading: usersLoading } = useQuery({
-    queryKey: ["available-users"], queryFn: getAvailableUsers, refetchInterval: 3000, staleTime: 1000, gcTime: 5 * 60 * 1000,
+    queryKey: ["available-users"], 
+    queryFn: getAvailableUsers, 
+    refetchInterval: 5000,
+    staleTime: 2000, 
+    gcTime: 5 * 60 * 1000,
   });
 
   const handleCallClick = (user: User) => {
@@ -31,7 +35,12 @@ export default function VideoCallPage() {
     callUser(user.id);
   };
 
-  const { data: callHistory = [], isLoading: historyLoading } = useQuery<VideoCallType[]>({ queryKey: ["call-history"], queryFn: getCallHistory, staleTime: 30000 });
+  const { data: callHistory = [], isLoading: historyLoading } = useQuery<VideoCallType[]>({ 
+    queryKey: ["call-history"], 
+    queryFn: getCallHistory, 
+    staleTime: 60000,
+    gcTime: 10 * 60 * 1000,
+  });
 
   const deleteOneMutation = useMutation({
     mutationFn: deleteCallRecord,

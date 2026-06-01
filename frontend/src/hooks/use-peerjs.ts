@@ -23,11 +23,9 @@ export function usePeerJS({ userId, onRemoteStream, onDataMessage, onCallReceive
   // Initialize PeerJS
   useEffect(() => {
     if (!userId) return;
+    
     const newPeer = new Peer(`mhflow-user-${userId}`, {
       debug: 0,
-      host: "peerjs-server.herokuapp.com" || "0.peerjs.com",
-      secure: true,
-      port: 443,
       config: {
         iceServers: [
           { urls: "stun:stun.l.google.com:19302" },
@@ -35,13 +33,32 @@ export function usePeerJS({ userId, onRemoteStream, onDataMessage, onCallReceive
           { urls: "stun:stun2.l.google.com:19302" },
           { urls: "stun:stun3.l.google.com:19302" },
           { urls: "stun:stun4.l.google.com:19302" },
+          {
+            urls: "turn:openrelay.metered.ca:80",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+          },
+          {
+            urls: "turn:openrelay.metered.ca:443",
+            username: "openrelayproject",
+            credential: "openrelayproject",
+          },
         ],
       },
     });
 
+    const timeoutId = setTimeout(() => {
+      if (!newPeer._open) {
+        console.warn("PeerJS initialization timeout");
+        setMediaError("Connection taking too long. Please refresh and try again.");
+      }
+    }, 10000);
+
     newPeer.on("open", () => {
+      clearTimeout(timeoutId);
       setPeer(newPeer);
       setMediaError(null);
+      console.log("PeerJS connected:", newPeer.id);
     });
 
     newPeer.on("call", (call) => {
@@ -53,18 +70,24 @@ export function usePeerJS({ userId, onRemoteStream, onDataMessage, onCallReceive
       setupDataConnection(conn);
     });
 
-    newPeer.on("error", (err) => {
-      console.error("PeerJS Error:", err);
+    newPeer.on("error", (err: any) => {
+      clearTimeout(timeoutId);
+      console.error("PeerJS Error:", err.type, err.message);
       if (err.type === "unavailable-id") {
         setMediaError("Failed to connect. Please refresh the page.");
       } else if (err.type === "peer-unavailable") {
         setMediaError("The other user is not available.");
       } else if (err.type === "network") {
         setMediaError("Network error. Check your connection.");
+      } else if (err.type === "server-error") {
+        setMediaError("PeerJS server error. Please try again later.");
+      } else {
+        setMediaError(`Connection error: ${err.message || err.type}. Please refresh.`);
       }
     });
 
     return () => {
+      clearTimeout(timeoutId);
       newPeer.destroy();
       setPeer(null);
     };
@@ -129,7 +152,8 @@ export function usePeerJS({ userId, onRemoteStream, onDataMessage, onCallReceive
 
   const callPeer = useCallback(async (calleeUserId: number) => {
     if (!peer) {
-      setMediaError("PeerJS not ready. Please refresh the page.");
+      const msg = mediaError || "PeerJS not ready. Please refresh the page and wait for connection.";
+      setMediaError(msg);
       return;
     }
     const stream = await startMediaStream();
@@ -159,7 +183,7 @@ export function usePeerJS({ userId, onRemoteStream, onDataMessage, onCallReceive
       setMediaError("Failed to start call. Please try again.");
       stopMediaStream();
     }
-  }, [peer, startMediaStream, stopMediaStream, onRemoteStream, setupDataConnection]);
+  }, [peer, mediaError, startMediaStream, stopMediaStream, onRemoteStream, setupDataConnection]);
 
   const answerCall = useCallback(async () => {
     if (!currentCallRef.current) return;

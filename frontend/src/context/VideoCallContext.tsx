@@ -78,13 +78,27 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
       if (callee) queryClient.setQueryData(["active-call"], { id: -1, caller_id: currentUserId, callee_id: calleeId, status: "ringing", callee, caller: { id: currentUserId, name: currentUserName } });
     },
     mutationFn: async (calleeId: number) => {
-      callPeer(calleeId).catch(() => {});
+      // First, create the call in backend
       const callData = await initiateCall(calleeId);
-      queryClient.setQueryData(["active-call"], callData);
+      if (!callData?.id) throw new Error("Failed to create call");
+      
+      // Then establish PeerJS connection
+      callPeer(calleeId).catch((err) => {
+        console.error("PeerJS connection failed:", err);
+      });
+      
       return callData;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["active-call"] }); },
-    onError: () => { toast.error("Failed to initiate call"); queryClient.setQueryData(["active-call"], null); stopMediaStream(); },
+    onSuccess: (data) => { 
+      queryClient.setQueryData(["active-call"], data);
+      queryClient.invalidateQueries({ queryKey: ["active-call"] }); 
+    },
+    onError: (err) => { 
+      console.error("Call initiation error:", err);
+      toast.error("Failed to initiate call"); 
+      queryClient.setQueryData(["active-call"], null); 
+      stopMediaStream(); 
+    },
   });
 
   const { mutate: acceptTheCall, isPending: isAcceptPending } = useMutation({
@@ -118,8 +132,12 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   });
 
   const { data: activeCalls } = useQuery({
-    queryKey: ["active-call"], queryFn: getActiveCall, refetchInterval: 500, staleTime: 100, gcTime: 5 * 60 * 1000,
-    enabled: !isCallingPending && !isAcceptPending && !!currentUserId,
+    queryKey: ["active-call"], 
+    queryFn: getActiveCall, 
+    refetchInterval: 1000,
+    staleTime: 500, 
+    gcTime: 5 * 60 * 1000,
+    enabled: !!currentUserId,
   });
   const activeCall = activeCalls ?? null;
 
@@ -132,6 +150,7 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if ((activeCall?.status === "rejected" || activeCall?.status === "ended") && activeCall.id !== lastEndedCallIdRef.current) {
       stopMediaStream();
+      sounds.stopRinging();
       lastEndedCallIdRef.current = activeCall.id;
       const otherUser = activeCall.caller_id === currentUserId ? activeCall.callee : activeCall.caller;
       const name = otherUser?.name || "User";
@@ -148,6 +167,13 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   const isRingingForCallee = Boolean(activeCall?.status === "ringing" && Number(activeCall.callee_id) === currentUserId);
   const isCallActive = Boolean(activeCall?.id && (activeCall.status === "ringing" || activeCall.status === "accepted"));
   const isCallActionPending = Boolean(isCallingPending || isAcceptPending || isRejectPending || isEndPending);
+
+  useEffect(() => {
+    if (isRingingForCallee) {
+      sounds.startRinging();
+      return () => sounds.stopRinging();
+    }
+  }, [isRingingForCallee]);
 
   const getOtherUserName = () => {
     if (!activeCall) return "User";
