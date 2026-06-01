@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAvailableUsers, getCallHistory, deleteCallRecord, deleteAllCallHistory, type User, type VideoCall as VideoCallType } from "../services/video-call-service";
-import { Phone, Clock, PhoneIncoming, PhoneOutgoing, Users, Trash2 } from "lucide-react";
+import { Phone, Clock, PhoneIncoming, PhoneOutgoing, Users, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useVideoCall } from "../context/VideoCallContext";
 
@@ -13,7 +13,9 @@ function isOnline(lastSeen?: string) {
 export default function VideoCallPage() {
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [userRole, setUserRole] = useState<"freelancer" | "client" | null>(null);
-  const { isCallActive, callUser, isCallActionPending, activeCall, setPortalTarget } = useVideoCall();
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
+  const { isCallActive, callUser, isCallActionPending, activeCall } = useVideoCall();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -23,7 +25,15 @@ export default function VideoCallPage() {
   }, []);
 
   const { data: availableUsers = [], isLoading: usersLoading } = useQuery({
-    queryKey: ["available-users"], queryFn: getAvailableUsers, refetchInterval: 3000, staleTime: 1000, gcTime: 5 * 60 * 1000,
+    queryKey: ["available-users"], queryFn: getAvailableUsers, refetchInterval: 30000, staleTime: 10000, gcTime: 5 * 60 * 1000,
+  });
+
+  const sortedUsers = [...availableUsers].sort((a, b) => {
+    const aOnline = isOnline(a.last_seen_at);
+    const bOnline = isOnline(b.last_seen_at);
+    if (aOnline && !bOnline) return -1;
+    if (!aOnline && bOnline) return 1;
+    return a.name.localeCompare(b.name);
   });
 
   const handleCallClick = (user: User) => {
@@ -52,15 +62,23 @@ export default function VideoCallPage() {
   });
 
   const handleDeleteOne = (callId: number) => {
-    if (window.confirm("Delete this call record?")) {
-      deleteOneMutation.mutate(callId);
-    }
+    setDeleteTarget(callId);
   };
 
   const handleDeleteAll = () => {
-    if (window.confirm("Clear all call history? This cannot be undone.")) {
-      deleteAllMutation.mutate();
+    setShowClearAllConfirm(true);
+  };
+
+  const confirmDeleteOne = () => {
+    if (deleteTarget !== null) {
+      deleteOneMutation.mutate(deleteTarget);
+      setDeleteTarget(null);
     }
+  };
+
+  const confirmClearAll = () => {
+    deleteAllMutation.mutate();
+    setShowClearAllConfirm(false);
   };
 
   const formatDuration = (start?: string, end?: string) => {
@@ -118,11 +136,11 @@ export default function VideoCallPage() {
   );
 
   return (
+    <>
     <div className="flex flex-col gap-8 p-8">
       <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Calls</h1>
 
-      {/* Active Call UI Portal Anchor */}
-      {isCallActive && <div ref={setPortalTarget} className="w-full"></div>}
+      {/* Active Call UI rendered via global VideoCallOverlay layout */}
 
       {/* Client View */}
       {!isCallActive && userRole === "client" && (
@@ -130,7 +148,7 @@ export default function VideoCallPage() {
           {availableUsers.length > 0 && (
             <div className="rounded-3xl border border-slate-200 p-6 dark:border-slate-800">
               <h2 className="mb-4 text-xl font-semibold text-slate-900 dark:text-white">Your Freelancer</h2>
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">{availableUsers.map((user: User) => (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">{sortedUsers.map((user: User) => (
                 <div key={user.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
                   <div className="flex-1">
                     <div className="flex items-center gap-2"><div className="relative flex h-2.5 w-2.5">{isOnline(user.last_seen_at) && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>}<span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${isOnline(user.last_seen_at) ? "bg-green-500" : "bg-slate-400"}`}></span></div><p className="font-semibold text-slate-900 dark:text-white">{user.name}</p></div>
@@ -159,18 +177,15 @@ export default function VideoCallPage() {
               <p className="text-slate-500 dark:text-slate-400 max-w-md text-sm leading-relaxed">You haven't added any clients yet. Add clients in the Clients tab and they will appear here once they accept their invitations.</p>
             </div>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">{availableUsers.map((user: User) => (
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">{sortedUsers.map((user: User) => (
               <div key={user.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600">
                 <div className="flex-1">
                   <div className="flex items-center gap-2"><div className="relative flex h-2.5 w-2.5">{isOnline(user.last_seen_at) && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>}<span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${isOnline(user.last_seen_at) ? "bg-green-500" : "bg-slate-400"}`}></span></div><p className="font-semibold text-slate-900 dark:text-white">{user.name}</p></div>
                   <p className="text-sm text-slate-500 dark:text-slate-400 ml-4">{user.email}</p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 ml-4 mt-1">{isOnline(user.last_seen_at) ? "Online now" : user.last_seen_at ? `Last seen: ${new Date(user.last_seen_at).toLocaleTimeString()}` : "Offline"}</p>
                 </div>
-                {!user.invitation_accepted_at ? (
-                  <div className="ml-3 flex flex-col items-end gap-1"><span className="inline-flex items-center rounded-lg bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">Pending Invite</span><span className="text-[10px] text-slate-400 dark:text-slate-500">Not registered yet</span></div>
-                ) : (
-                  <button onClick={() => handleCallClick(user)} disabled={isCallActionPending || !!activeCall?.id} className="cursor-pointer ml-3 flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 font-semibold text-white transition hover:bg-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed"><Phone size={16} /> Call</button>
-                )}
+                <button onClick={() => handleCallClick(user)} disabled={isCallActionPending || !!activeCall?.id} className="cursor-pointer ml-3 flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 font-semibold text-white transition hover:bg-blue-600 disabled:bg-slate-400 disabled:cursor-not-allowed"><Phone size={16} /> Call</button>
+
               </div>
             ))}</div>
           )}
@@ -178,5 +193,90 @@ export default function VideoCallPage() {
         {renderCallHistory()}
       </>)}
     </div>
+
+      {/* Confirm Delete Single Record */}
+      {deleteTarget !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h3 className="text-xl font-semibold">Confirm Delete</h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  You are about to delete this call record.
+                </p>
+              </div>
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/50">
+              <p className="text-sm text-slate-600 dark:text-slate-300">This action cannot be undone.</p>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="cursor-pointer rounded-2xl border border-slate-300 px-4 py-2.5 text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteOne}
+                disabled={deleteOneMutation.isPending}
+                className="cursor-pointer rounded-2xl bg-red-600 px-4 py-2.5 font-medium text-white transition hover:bg-red-500 disabled:opacity-60"
+              >
+                {deleteOneMutation.isPending ? "Deleting..." : "Yes, delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Clear All */}
+      {showClearAllConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h3 className="text-xl font-semibold">Clear Call History</h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  You are about to delete all call records.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowClearAllConfirm(false)}
+                className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/50">
+              <p className="text-sm text-slate-600 dark:text-slate-300">This will permanently remove all call history. This action cannot be undone.</p>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setShowClearAllConfirm(false)}
+                className="cursor-pointer rounded-2xl border border-slate-300 px-4 py-2.5 text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmClearAll}
+                disabled={deleteAllMutation.isPending}
+                className="cursor-pointer rounded-2xl bg-red-600 px-4 py-2.5 font-medium text-white transition hover:bg-red-500 disabled:opacity-60"
+              >
+                {deleteAllMutation.isPending ? "Clearing..." : "Yes, clear all"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

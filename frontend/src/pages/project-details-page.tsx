@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -9,11 +9,15 @@ import {
   FolderOpen,
   ListChecks,
   User,
+  Receipt,
+  FileSignature,
 } from "lucide-react";
 
 import { getProjectById } from "../services/project-service";
 import ProjectMilestonesManager from "../components/projects/project-milestones-manager";
 import ProjectFilesManager from "../components/projects/project-files-manager";
+import ProjectInvoicesManager from "../components/projects/project-invoices-manager";
+import ProjectContractsManager from "../components/projects/project-contracts-manager";
 
 function formatDeadline(dateString?: string | null) {
   if (!dateString) return "-";
@@ -65,13 +69,22 @@ function getStatusClasses(status?: string) {
   }
 }
 
-type SectionTab = "overview" | "files" | "milestones";
+type SectionTab = "overview" | "files" | "milestones" | "invoices" | "contracts";
 
 export default function ProjectDetailsPage() {
   const params = useParams();
   const projectId = Number(params.id);
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const initialTab = (searchParams.get("tab") as SectionTab) || "overview";
+  const [activeTab, setActiveTab] = useState<SectionTab>(initialTab);
   const [expanded, setExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState<SectionTab>("overview");
+
+  // Update URL when tab changes without triggering a full re-render
+  const handleTabChange = (tab: SectionTab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   const {
     data: project,
@@ -190,7 +203,7 @@ export default function ProjectDetailsPage() {
         <div className=" mt-6 flex flex-wrap gap-3 border-b border-slate-200 pb-6 dark:border-slate-800">
           <button 
             type="button"
-            onClick={() => setActiveTab("overview")}
+            onClick={() => handleTabChange("overview")}
             className={tabClass("overview")}
           >
             <FolderKanban size={16} />
@@ -199,7 +212,7 @@ export default function ProjectDetailsPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab("files")}
+            onClick={() => handleTabChange("files")}
             className={tabClass("files")}
           >
             <FolderOpen size={16} />
@@ -208,11 +221,29 @@ export default function ProjectDetailsPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab("milestones")}
+            onClick={() => handleTabChange("milestones")}
             className={tabClass("milestones")}
           >
             <ListChecks size={16} />
             Milestones
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange("invoices")}
+            className={tabClass("invoices")}
+          >
+            <Receipt size={16} />
+            Invoices
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange("contracts")}
+            className={tabClass("contracts")}
+          >
+            <FileSignature size={16} />
+            Contracts
           </button>
         </div>
 
@@ -297,6 +328,18 @@ export default function ProjectDetailsPage() {
         {activeTab === "milestones" && (
           <div className="mt-6 rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
             <ProjectMilestonesManager projectId={project.id} />
+          </div>
+        )}
+
+        {activeTab === "invoices" && (
+          <div className="mt-6 rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
+            <ProjectInvoicesManager projectId={project.id} defaultAmount={project.budget ?? undefined} />
+          </div>
+        )}
+
+        {activeTab === "contracts" && (
+          <div className="mt-6 rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
+            <ProjectContractsManager projectId={project.id} />
           </div>
         )}
       </div>

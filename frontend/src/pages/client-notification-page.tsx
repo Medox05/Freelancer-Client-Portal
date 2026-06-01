@@ -1,5 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Trash2 } from "lucide-react";
+import { 
+  CheckCircle2, 
+  Trash2, 
+  FileText, 
+  FileSignature, 
+  CreditCard, 
+  Calendar, 
+  Bell, 
+  Folder 
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -9,6 +18,7 @@ import {
   deleteNotification,
   deleteAllNotifications,
 } from "../services/notification-service";
+import api from "../lib/axios";
 
 type NotificationItem = {
   id: number;
@@ -37,21 +47,78 @@ function formatDateTime(date?: string | null) {
   });
 }
 
-function getNotificationHref(notification: NotificationItem) {
+function getNotificationIcon(type: string) {
+  const iconSize = 28;
+  switch (type) {
+    case "contract_sent":
+      return {
+        icon: <FileText size={iconSize} />,
+        bgClass: "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300",
+      };
+    case "contract_signed":
+      return {
+        icon: <FileSignature size={iconSize} />,
+        bgClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300",
+      };
+    case "project_file":
+      return {
+        icon: <Folder size={iconSize} />,
+        bgClass: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+      };
+    case "meeting_created":
+    case "meeting_updated":
+      return {
+        icon: <Calendar size={iconSize} />,
+        bgClass: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300",
+      };
+    default:
+      if (type && type.startsWith("invoice_")) {
+        return {
+          icon: <CreditCard size={iconSize} />,
+          bgClass: "bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300",
+        };
+      }
+      return {
+        icon: <Bell size={iconSize} />,
+        bgClass: "bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300",
+      };
+  }
+}
+
+function getNotificationHref(notification: NotificationItem, role?: string) {
+  const isFreelancer = role === "freelancer";
+  const projectBase = isFreelancer ? "/projects" : "/client-projects";
+
+  if (notification.type && notification.type.startsWith("contract_") && notification.project_id) {
+    return `${projectBase}/${notification.project_id}?tab=contracts`;
+  }
+
   if (notification.type === "project_file" && notification.project_id) {
-    return `/client-projects/${notification.project_id}?tab=files`;
+    return `${projectBase}/${notification.project_id}?tab=files`;
   }
 
   if (notification.type === "project_deleted") {
-    return `/client-projects`; // redirect list
+    return projectBase; // redirect list
+  }
+
+  if (notification.type && notification.type.startsWith("invoice_") && notification.project_id) {
+    return `${projectBase}/${notification.project_id}?tab=invoices`;
+  }
+
+  if (notification.type && notification.type.includes("milestone") && notification.project_id) {
+    return `${projectBase}/${notification.project_id}?tab=milestones`;
   }
 
   if (notification.project_id) {
-    return `/client-projects/${notification.project_id}`;
+    return `${projectBase}/${notification.project_id}`;
   }
 
   if (notification.conversation_id) {
-    return "/chat";
+    return `/chat?conversation=${notification.conversation_id}`;
+  }
+
+  if (notification.type && notification.type.startsWith("meeting_")) {
+    return "/meetings";
   }
 
   return null;
@@ -59,6 +126,15 @@ function getNotificationHref(notification: NotificationItem) {
 
 export default function ClientNotificationPage() {
   const queryClient = useQueryClient();
+
+  const { data: me } = useQuery({
+    queryKey: ["me"],
+    queryFn: async () => {
+      const { data } = await api.get("/me");
+      return data;
+    },
+    staleTime: 30000,
+  });
 
   const { data: notifications = [], isLoading, isError } = useQuery({
     queryKey: ["notifications"],
@@ -183,13 +259,15 @@ export default function ClientNotificationPage() {
         ) : (
           <div>
             {notifications.map((notification) => {
-              const href = getNotificationHref(notification);
+              const href = getNotificationHref(notification, me?.role);
+
+              const { icon, bgClass } = getNotificationIcon(notification.type);
 
               const cardContent = (
                 <>
                   <div className="flex min-w-0 items-start gap-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-300">
-                      <CheckCircle2 size={28} />
+                    <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full ${bgClass}`}>
+                      {icon}
                     </div>
 
                     <div className="min-w-0">
@@ -213,18 +291,34 @@ export default function ClientNotificationPage() {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      deleteOneMutation.mutate(notification.id);
-                    }}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-red-500 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10"
-                  >
-                    <Trash2 size={16} />
-                    Delete
-                  </button>
+                  <div className="flex flex-col gap-2 shrink-0">
+                    {!notification.is_read && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          markOneMutation.mutate(notification.id);
+                        }}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
+                        <CheckCircle2 size={16} />
+                        Mark read
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        deleteOneMutation.mutate(notification.id);
+                      }}
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-red-500 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10"
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </button>
+                  </div>
                 </>
               );
 

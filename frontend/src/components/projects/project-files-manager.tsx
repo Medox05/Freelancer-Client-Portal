@@ -1,9 +1,11 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Trash2, Upload } from "lucide-react";
+import { Download, Eye, Trash2, Upload, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import Modal from "../ui/modal";
 import api from "../../lib/axios";
+import FileFeedbackViewer from "./file-feedback-viewer";
+import { handleFileDownload, handleFileOpen } from "../../lib/download";
 
 type ProjectFile = {
   id: number;
@@ -11,6 +13,8 @@ type ProjectFile = {
   file_size: number;
   created_at: string;
   download_url: string;
+  mime_type?: string;
+  file_url?: string;
 };
 
 type Props = {
@@ -69,6 +73,7 @@ export default function ProjectFilesManager({ projectId }: Props) {
   const queryClient = useQueryClient();
 
   const [fileToDelete, setFileToDelete] = useState<ProjectFile | null>(null);
+  const [selectedReviewFile, setSelectedReviewFile] = useState<ProjectFile | null>(null);
 
   const { data: files = [], isLoading } = useQuery({
     queryKey: ["project-files", projectId],
@@ -111,7 +116,10 @@ export default function ProjectFilesManager({ projectId }: Props) {
             Files
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Upload and manage your project files
+            Upload and manage your project files.
+          </p>
+          <p className="mt-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+            💡 Tip: Click "Feedback" on any file to open a live discussion thread and chat!
           </p>
         </div>
 
@@ -165,19 +173,38 @@ export default function ProjectFilesManager({ projectId }: Props) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <a
-                  href={file.download_url}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedReviewFile(file)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-indigo-500 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-600 transition hover:bg-indigo-100 dark:border-indigo-500/40 dark:bg-indigo-950/20 dark:text-indigo-300 dark:hover:bg-indigo-950/40 cursor-pointer"
+                >
+                  <MessageSquare size={16} />
+                  Feedback
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleFileOpen(file.download_url, file.file_name)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  <Eye size={16} />
+                  Open
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleFileDownload(file.download_url, file.file_name)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   <Download size={16} />
                   Download
-                </a>
+                </button>
 
                 <button
                   type="button"
                   onClick={() => setFileToDelete(file)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-red-500 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10"
+                  className="inline-flex items-center gap-2 rounded-xl border border-red-500 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10 cursor-pointer"
                 >
                   <Trash2 size={16} />
                   Delete
@@ -228,6 +255,13 @@ export default function ProjectFilesManager({ projectId }: Props) {
           </button>
         </div>
       </Modal>
+
+      {selectedReviewFile && (
+        <FileFeedbackViewer
+          file={selectedReviewFile}
+          onClose={() => setSelectedReviewFile(null)}
+        />
+      )}
     </div>
   );
 }

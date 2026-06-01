@@ -8,12 +8,14 @@ type Props = {
   value: Date | null;
   onChange: (date: Date | null) => void;
   placeholder?: string;
+  placement?: "top" | "bottom";
 };
 
 export default function DatePicker({
   value,
   onChange,
   placeholder = "Select deadline",
+  placement = "bottom",
 }: Props) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -42,11 +44,11 @@ export default function DatePicker({
   }, []);
 
   return (
-    <div ref={wrapperRef} className="relative">
+    <div ref={wrapperRef} className="relative w-full">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-left text-slate-900 outline-none transition hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:border-slate-500"
+        className="flex w-full h-[50px] items-center justify-between rounded-2xl border border-slate-300 bg-slate-50 px-4 text-left text-slate-900 outline-none transition hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:border-slate-500"
       >
         <span className={value ? "" : "text-slate-500 dark:text-slate-400"}>
           {value ? format(value, "yyyy-MM-dd") : placeholder}
@@ -59,7 +61,11 @@ export default function DatePicker({
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 z-50 mb-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+        <div 
+          className={`absolute left-0 z-50 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900 ${
+            placement === "top" ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
+        >
           <DayPicker
             mode="single"
             selected={value ?? undefined}
@@ -69,6 +75,10 @@ export default function DatePicker({
             }}
             disabled={{ before: new Date() }}
             className="clientflow-daypicker"
+            modifiersClassNames={{
+              selected: "bg-blue-600 text-white hover:bg-blue-700 font-bold",
+              today: "border border-blue-500 text-blue-600",
+            }}
             showOutsideDays
           />
         </div>

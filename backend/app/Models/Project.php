@@ -46,5 +46,8 @@ class Project extends Model
         return $this->hasMany(ProjectComment::class)->latest();
     }
 
-
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
 }

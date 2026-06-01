@@ -19,6 +19,7 @@ class User extends Authenticatable
         'invitation_expires_at',
         'invitation_accepted_at',
         'last_seen_at',
+        'email_verified_at',
     ];
 
     protected $hidden = [

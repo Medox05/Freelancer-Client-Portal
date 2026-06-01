@@ -10,7 +10,10 @@ export type DashboardResponse = {
     canceled_projects?: number;
 
     spending?: number;
+    total_projects?: number;
+    pending_projects?: number;
   };
+  chart_data?: { name: string; total: number }[];
   recent_projects: any[];
   upcoming_deadlines: any[];
 };

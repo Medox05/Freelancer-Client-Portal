@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Lock, LogIn, Mail } from "lucide-react";
+import { Lock, LogIn, Mail, ArrowLeft } from "lucide-react";
 import { login } from "../services/auth-service";
 import { setToken } from "../lib/auth";
 import ThemeToggle from "../components/theme-toggle";
@@ -24,16 +24,27 @@ export default function LoginPage() {
     try {
       const res = await login({ email, password });
 
-      setToken(res.token);
-      localStorage.setItem("user", JSON.stringify(res.user));
+      if (res.token) {
+        setToken(res.token);
+      }
+      if (res.user) {
+        localStorage.setItem("user", JSON.stringify(res.user));
 
-      if (res.user.role === "client") {
-        navigate("/client-dashboard", { replace: true });
+        if (res.user.role === "client") {
+          navigate("/client-dashboard", { replace: true });
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
       } else {
         navigate("/dashboard", { replace: true });
       }
     } catch (err: any) {
       const errors = err?.response?.data?.errors;
+
+      if (err?.response?.status === 403 && err?.response?.data?.require_verification) {
+        navigate(`/verify-email?email=${encodeURIComponent(err.response.data.email || email)}`);
+        return;
+      }
 
       if (errors?.email?.[0]) {
         setError(errors.email[0]);
@@ -99,9 +110,14 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm text-slate-600 dark:text-slate-300">
-              Password
-            </label>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="block text-sm text-slate-600 dark:text-slate-300">
+                Password
+              </label>
+              <Link to="/forgot-password" className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400">
+                Forgot password?
+              </Link>
+            </div>
             <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 dark:border-slate-700 dark:bg-slate-800">
               <Lock size={16} className="text-slate-400" />
               <input
@@ -133,6 +149,16 @@ export default function LoginPage() {
             Register
           </Link>
         </p>
+
+        <div className="mt-6 flex justify-center">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          >
+            <ArrowLeft size={16} />
+            Back to Home Page
+          </Link>
+        </div>
       </div>
     </div>
   );

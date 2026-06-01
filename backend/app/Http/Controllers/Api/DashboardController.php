@@ -46,6 +46,30 @@ class DashboardController extends Controller
                 ->take(5)
                 ->get();
 
+            $sixMonthsAgo = now()->subMonths(5)->startOfMonth();
+            $completedProjectsData = Project::where('user_id', $user->id)
+                ->where('status', 'completed')
+                ->where('updated_at', '>=', $sixMonthsAgo)
+                ->get(['budget', 'updated_at']);
+
+            $chartData = [];
+            for ($i = 5; $i >= 0; $i--) {
+                $month = now()->subMonths($i)->format('M');
+                $chartData[$month] = 0;
+            }
+
+            foreach ($completedProjectsData as $project) {
+                $month = $project->updated_at->format('M');
+                if (isset($chartData[$month])) {
+                    $chartData[$month] += (float) $project->budget;
+                }
+            }
+
+            $formattedChartData = [];
+            foreach ($chartData as $name => $total) {
+                $formattedChartData[] = ['name' => $name, 'total' => $total];
+            }
+
             return response()->json([
                 'role' => 'freelancer',
                 'stats' => [
@@ -55,6 +79,7 @@ class DashboardController extends Controller
                     'completed_projects' => $completedProjects,
                     'canceled_projects' => $canceledProjects,
                 ],
+                'chart_data' => $formattedChartData,
                 'recent_projects' => $recentProjects,
                 'upcoming_deadlines' => $upcomingDeadlines,
             ]);
@@ -80,6 +105,8 @@ class DashboardController extends Controller
             ->where('status', 'completed')
             ->sum('budget');
 
+        $totalProjects = Project::where('client_id', $client->id)->count();
+
         $activeProjects = Project::where('client_id', $client->id)
             ->where('status', 'in_progress')
             ->count();
@@ -90,6 +117,10 @@ class DashboardController extends Controller
 
         $canceledProjects = Project::where('client_id', $client->id)
             ->where('status', 'canceled')
+            ->count();
+            
+        $pendingProjects = Project::where('client_id', $client->id)
+            ->where('status', 'pending')
             ->count();
 
         $recentProjects = Project::with('user:id,name,email')
@@ -106,14 +137,41 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $sixMonthsAgo = now()->subMonths(5)->startOfMonth();
+        $completedProjectsData = Project::where('client_id', $client->id)
+            ->where('status', 'completed')
+            ->where('updated_at', '>=', $sixMonthsAgo)
+            ->get(['budget', 'updated_at']);
+
+        $chartData = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $month = now()->subMonths($i)->format('M');
+            $chartData[$month] = 0;
+        }
+
+        foreach ($completedProjectsData as $project) {
+            $month = $project->updated_at->format('M');
+            if (isset($chartData[$month])) {
+                $chartData[$month] += (float) $project->budget;
+            }
+        }
+
+        $formattedChartData = [];
+        foreach ($chartData as $name => $total) {
+            $formattedChartData[] = ['name' => $name, 'total' => $total];
+        }
+
         return response()->json([
             'role' => 'client',
             'stats' => [
+                'total_projects' => $totalProjects,
                 'spending' => $spending,
                 'active_projects' => $activeProjects,
                 'completed_projects' => $completedProjects,
                 'canceled_projects' => $canceledProjects,
+                'pending_projects' => $pendingProjects,
             ],
+            'chart_data' => $formattedChartData,
             'recent_projects' => $recentProjects,
             'upcoming_deadlines' => $upcomingDeadlines,
         ]);

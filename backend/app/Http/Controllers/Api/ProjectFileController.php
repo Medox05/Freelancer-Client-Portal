@@ -43,6 +43,7 @@ class ProjectFileController extends Controller
                 'mime_type' => $file->mime_type,
                 'created_at' => optional($file->created_at)?->toDateTimeString(),
                 'download_url' => url('/api/project-files/' . $file->id . '/download'),
+                'file_url' => url('/storage/' . $file->file_path),
             ];
         });
 
@@ -103,6 +104,7 @@ class ProjectFileController extends Controller
             'mime_type' => $projectFile->mime_type,
             'created_at' => optional($projectFile->created_at)?->toDateTimeString(),
             'download_url' => url('/api/project-files/' . $projectFile->id . '/download'),
+            'file_url' => url('/storage/' . $projectFile->file_path),
         ], 201);
     }
 
@@ -151,6 +153,10 @@ class ProjectFileController extends Controller
 
         if (! file_exists($path)) {
             return response()->json(['message' => 'File not found'], 404);
+        }
+
+        if ($request->query('inline') === 'true') {
+            return response()->file($path);
         }
 
         return response()->download($path, $projectFile->original_name);

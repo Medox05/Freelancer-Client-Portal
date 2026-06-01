@@ -42,6 +42,7 @@ export async function initiateCall(calleeId: number) {
 }
 
 export async function acceptCall(videoCallId: number) {
+  if (!videoCallId) return null;
   try {
     const { data } = await api.post<VideoCall>(
       `/video-calls/${videoCallId}/accept`,
@@ -54,6 +55,7 @@ export async function acceptCall(videoCallId: number) {
 }
 
 export async function rejectCall(videoCallId: number) {
+  if (!videoCallId) return null;
   try {
     const { data } = await api.post<VideoCall>(
       `/video-calls/${videoCallId}/reject`,
@@ -66,6 +68,7 @@ export async function rejectCall(videoCallId: number) {
 }
 
 export async function endCall(videoCallId: number) {
+  if (!videoCallId) return null;
   try {
     const { data } = await api.post<VideoCall>(
       `/video-calls/${videoCallId}/end`,
@@ -116,6 +119,24 @@ export async function deleteCallRecord(videoCallId: number) {
 export async function deleteAllCallHistory() {
   try {
     const { data } = await api.delete("/video-calls/history");
+    return data;
+  } catch (error: any) {
+    throw error;
+  }
+}
+
+export async function pingPresence() {
+  try {
+    const { data } = await api.post("/presence/ping", {});
+    return data;
+  } catch (error: any) {
+    throw error;
+  }
+}
+
+export async function cleanupActiveCalls() {
+  try {
+    const { data } = await api.post("/video-calls/cleanup", {});
     return data;
   } catch (error: any) {
     throw error;

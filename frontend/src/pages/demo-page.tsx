@@ -20,6 +20,7 @@ const slidesData: Record<ViewCategory, Slide[]> = {
     { src: "/demo3.png", title: "Projects List", description: "Track your active projects, budgets, and their current completion status." },
     { src: "/demo5.png", title: "Integrated Chat", description: "Communicate in real-time with clients through built-in messaging threads." },
     { src: "/demo6.png", title: "Call Management", description: "Keep track of your communication history and quickly start new calls." },
+    { src: "/demo_meetings.png", title: "Meetings & Calls", description: "Showcase of interactive calendar, video calls, and status tracking." },
     { src: "/demo7.png", title: "Video Calls", description: "Host real-time face-to-face video meetings with clients seamlessly." },
   ],
   client: [

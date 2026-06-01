@@ -14,7 +14,7 @@ return [
         env('FRONTEND_URL'),
     ],
 
-    'allowed_origins_patterns' => ['/^https?:\/\/10\.\d+\.\d+\.\d+:\d+$/', '/^https?:\/\/.*\.vercel\.app$/'],
+    'allowed_origins_patterns' => ['/^https?:\/\/10\.\d+\.\d+\.\d+:\d+$/', '/^https?:\/\/.*\.vercel\.app$/', '/^http:\/\/localhost:\d+$/', '/^http:\/\/127\.0\.0\.1:\d+$/'],
 
     'allowed_headers' => ['*'],
 

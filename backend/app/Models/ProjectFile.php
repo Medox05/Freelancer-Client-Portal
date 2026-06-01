@@ -24,4 +24,9 @@ class ProjectFile extends Model
     {
         return $this->belongsTo(User::class, 'uploaded_by');
     }
+
+    public function annotations()
+    {
+        return $this->hasMany(ProjectFileAnnotation::class);
+    }
 }

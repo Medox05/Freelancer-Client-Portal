@@ -9,6 +9,15 @@ import {
 
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { getDashboardStats } from "../services/dashboard-service";
 
 function StatCard({
@@ -104,7 +113,10 @@ export default function DashboardPage() {
     );
   }
 
-  const { role, stats, recent_projects, upcoming_deadlines } = data;
+  const { role, stats, chart_data, recent_projects, upcoming_deadlines } = data;
+
+  const isDark = document.documentElement.classList.contains("dark");
+  const chartColor = isDark ? "#60a5fa" : "#2563eb"; // blue-400 or blue-600
 
   return (
     <div className="space-y-8">
@@ -175,6 +187,56 @@ export default function DashboardPage() {
 
         </>
       )}
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-2xl font-semibold mb-6">
+          {role === "freelancer" ? "Revenue Over Time" : "Spending Over Time"}
+        </h3>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chart_data || []}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke={isDark ? "#334155" : "#e2e8f0"}
+              />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: isDark ? "#94a3b8" : "#64748b", fontSize: 13 }}
+                dy={10}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: isDark ? "#94a3b8" : "#64748b", fontSize: 13 }}
+                tickFormatter={(value) => `$${value}`}
+              />
+              <Tooltip
+                cursor={{ fill: isDark ? "#1e293b" : "#f1f5f9" }}
+                contentStyle={{
+                  backgroundColor: isDark ? "#0f172a" : "#ffffff",
+                  borderColor: isDark ? "#334155" : "#e2e8f0",
+                  borderRadius: "16px",
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+                }}
+                itemStyle={{ color: isDark ? "#f8fafc" : "#0f172a", fontWeight: "bold" }}
+                formatter={(value: any) => [`$${Number(value).toLocaleString()}`, role === "freelancer" ? "Revenue" : "Spending"]}
+              />
+              <Bar
+                dataKey="total"
+                fill={chartColor}
+                radius={[6, 6, 6, 6]}
+                barSize={40}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">

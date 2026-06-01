@@ -5,16 +5,20 @@ import {
   MessageCircle,
   Users,
   Video,
+  Calendar,
+  X,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { getConversations } from "../../services/chat-service";
-import { getActiveCall } from "../../services/video-call-service";
+import { type VideoCall as VideoCallType } from "../../services/video-call-service";
+import { getMeetings } from "../../services/meeting-service";
 import api from "../../lib/axios";
 import { useTheme } from "../../lib/theme";
 import { sounds } from "../../lib/sounds";
+import { useVideoCall } from "../../context/VideoCallContext";
 
 type MeResponse = {
   id: number;
@@ -33,15 +37,17 @@ function getStoredUser(): MeResponse | null {
   }
 }
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const storedUser = getStoredUser();
   const { theme } = useTheme();
+
+
 
   const { data } = useQuery({
     queryKey: ["chat-conversations"],
     queryFn: getConversations,
-    refetchInterval: 10000,
-    staleTime: 5000,
+    refetchInterval: 45000,
+    staleTime: 10000,
   });
 
   const conversations = Array.isArray(data) ? data : [];
@@ -74,16 +80,22 @@ export default function Sidebar() {
     previousUnreadCount.current = unreadChatCount;
   }, [unreadChatCount]);
 
-  const { data: activeCall } = useQuery({
-    queryKey: ["active-call"],
-    queryFn: getActiveCall,
-    refetchInterval: 10000,
-    staleTime: 5000,
+  const { activeCall, isRingingForCallee } = useVideoCall();
+
+  const { data: meetingsData } = useQuery({
+    queryKey: ["meetings"],
+    queryFn: getMeetings,
+    refetchInterval: 30000,
+    staleTime: 10000,
   });
 
-  const isIncomingCall =
-    activeCall?.status === "ringing" &&
-    Number(activeCall?.callee_id) === currentUser?.id;
+  const meetings = Array.isArray(meetingsData) ? meetingsData : [];
+
+  const pendingIncomingMeetingsCount = meetings.filter(
+    (meeting) => meeting.status === "pending" && meeting.created_by !== currentUser?.id
+  ).length;
+
+  const isIncomingCall = isRingingForCallee;
 
   const previousCallId = useRef<number | null>(null);
 
@@ -131,13 +143,26 @@ export default function Sidebar() {
     }`;
 
   return (
-    <aside className="w-80 border-r border-slate-200 bg-white px-6 py-8 dark:border-slate-800 dark:bg-slate-950">
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 w-80 transform overflow-y-auto border-r border-slate-200 bg-white px-6 py-8 transition-transform duration-300 ease-in-out dark:border-slate-800 dark:bg-slate-950 lg:static lg:translate-x-0 ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
       <div className="mb-10">
-        <div className="flex items-center gap-3 mb-2">
-          <img src={theme === "dark" ? "/M_nobackround_White.png" : "/M_nobackround_Black.png"} className="h-8 w-auto object-contain drop-shadow-sm dark:drop-shadow-md" alt="MhFlow Logo" />
-          <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-500 dark:from-slate-100 dark:to-slate-400">
-            MhFlow
-          </h1>
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-3">
+            <img src={theme === "dark" ? "/M_nobackround_White.png" : "/M_nobackround_Black.png"} className="h-8 w-auto object-contain drop-shadow-sm dark:drop-shadow-md" alt="MhFlow Logo" />
+            <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-500 dark:from-slate-100 dark:to-slate-400">
+              MhFlow
+            </h1>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all hover:bg-slate-100 active:scale-95 lg:hidden dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
+            type="button"
+          >
+            <X size={18} />
+          </button>
         </div>
         <p className="text-sm text-slate-500 dark:text-slate-400">
           {isClient ? "Client Portal" : "Freelancer Portal"}
@@ -203,6 +228,18 @@ export default function Sidebar() {
               )}
             </NavLink>
 
+            <NavLink to="/meetings" className={linkClass}>
+              <span className="flex items-center gap-3">
+                <Calendar size={20} />
+                Meetings
+              </span>
+
+              {pendingIncomingMeetingsCount > 0 && (
+                <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-amber-500 px-2 text-xs font-bold text-white">
+                  {pendingIncomingMeetingsCount}
+                </span>
+              )}
+            </NavLink>
             
           </>
         ) : (
@@ -253,6 +290,18 @@ export default function Sidebar() {
               )}
             </NavLink>
 
+            <NavLink to="/meetings" className={linkClass}>
+              <span className="flex items-center gap-3">
+                <Calendar size={20} />
+                Meetings
+              </span>
+
+              {pendingIncomingMeetingsCount > 0 && (
+                <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-amber-500 px-2 text-xs font-bold text-white">
+                  {pendingIncomingMeetingsCount}
+                </span>
+              )}
+            </NavLink>
             
           </>
         )}

@@ -8,6 +8,7 @@ import {
   Search,
   Send,
   X,
+  ArrowLeft,
 } from "lucide-react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import {
@@ -107,7 +108,8 @@ function isUserOnline(lastSeen?: string | null) {
   if (!lastSeen) return false;
 
   const diff = Date.now() - new Date(lastSeen).getTime();
-  return diff < 15000;
+  // Ping fires every 20s; 65s threshold gives a safe 3-ping buffer
+  return diff < 65000;
 }
 
 function formatLastSeen(value?: string | null) {
@@ -157,7 +159,7 @@ export default function ChatPage() {
   } = useQuery<Conversation[]>({
     queryKey: ["chat-conversations"],
     queryFn: getConversations,
-    refetchInterval: 8000,
+    refetchInterval: 45000,
     staleTime: 5000,
   });
 
@@ -204,7 +206,7 @@ export default function ChatPage() {
       queryKey: ["chat-messages", selectedConversation?.id],
       queryFn: () => getMessages(selectedConversation!.id),
       enabled: !!selectedConversation?.id,
-      refetchInterval: selectedConversation?.id ? 5000 : false,
+      refetchInterval: selectedConversation?.id ? 30000 : false,
       staleTime: 3000,
     });
 
@@ -432,7 +434,9 @@ export default function ChatPage() {
 
   return (
     <div className="grid h-[calc(100vh-140px)] gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-      <div className="flex h-full min-h-0 flex-col rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className={`flex h-full min-h-0 flex-col rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 ${
+        selectedConversation ? "hidden xl:flex" : "flex"
+      }`}>
         <div className="border-b border-slate-200 px-5 py-5 dark:border-slate-800">
           <div className="mb-4 flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
@@ -577,11 +581,24 @@ export default function ChatPage() {
         </div>
       </div>
 
-      <div className="flex h-full min-h-0 flex-col rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className={`flex h-full min-h-0 flex-col rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 ${
+        selectedConversation ? "flex" : "hidden xl:flex"
+      }`}>
         {selectedConversation ? (
           <>
             <div className="border-b border-slate-200 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(null);
+                    setSearchParams({});
+                  }}
+                  className="mr-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-100 active:scale-95 xl:hidden dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-lg font-semibold dark:bg-slate-800">
                   {(otherUser?.name || selectedConversation.name)
                     .charAt(0)

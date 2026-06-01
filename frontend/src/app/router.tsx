@@ -17,8 +17,13 @@ import AppShell from "../components/layout/app-shell";
 import ProtectedRoute from "../components/protected-route";
 import NotFoundPage from "../pages/not-found-page";
 import CreatePasswordPage from "../pages/create-password-page";
+import ForgotPasswordPage from "../pages/forgot-password-page";
+import VerifyEmailPage from "../pages/verify-email-page";
 import LandingPage from "../pages/landing-page";
 import DemoPage from "../pages/demo-page";
+import MeetingsPage from "../pages/meetings-page";
+import MockStripeCheckoutPage from "../pages/mock-stripe-checkout-page";
+import PreviewPage from "../pages/preview-page";
 
 export const router = createBrowserRouter([
   {
@@ -30,6 +35,10 @@ export const router = createBrowserRouter([
     element: <DemoPage />,
   },
   {
+    path: "/mock-stripe-checkout",
+    element: <MockStripeCheckoutPage />,
+  },
+  {
     path: "/login",
     element: <LoginPage />,
   },
@@ -37,10 +46,21 @@ export const router = createBrowserRouter([
     path: "/register",
     element: <RegisterPage />,
   },
-  
+  {
+    path: "/preview",
+    element: <PreviewPage />,
+  },
   {
     path: "/create-password",
     element: <CreatePasswordPage />,
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: "/verify-email",
+    element: <VerifyEmailPage />,
   },
   {
     element: (
@@ -77,6 +97,10 @@ export const router = createBrowserRouter([
       {
         path: "/calls",
         element: <VideoCallPage />,
+      },
+      {
+        path: "/meetings",
+        element: <MeetingsPage />,
       },
       {
         path: "/client-dashboard",

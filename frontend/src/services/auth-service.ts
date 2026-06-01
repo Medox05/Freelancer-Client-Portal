@@ -21,9 +21,11 @@ export type RegisterPayload = {
 };
 
 type AuthResponse = {
-  message: string;
-  user: User;
-  token: string;
+  message?: string;
+  user?: User;
+  token?: string;
+  require_verification?: boolean;
+  email?: string;
 };
 
 export async function register(payload: RegisterPayload) {

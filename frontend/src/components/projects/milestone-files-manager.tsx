@@ -1,8 +1,9 @@
 import { useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Trash2, Upload } from "lucide-react";
+import { Download, Eye, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../lib/axios";
+import { handleFileDownload, handleFileOpen } from "../../lib/download";
 
 type ProjectFile = {
   id: number;
@@ -135,12 +136,23 @@ export default function ProjectFilesManager({ projectId }: Props) {
               </div>
 
               <div className="flex gap-2">
-                <a
-                  href={file.download_url}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-slate-700"
+                <button
+                  type="button"
+                  onClick={() => handleFileOpen(file.download_url, file.file_name)}
+                  className="rounded-xl border border-slate-300 px-3 py-2 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                  title="Open in new tab"
+                >
+                  <Eye size={16} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleFileDownload(file.download_url, file.file_name)}
+                  className="rounded-xl border border-slate-300 px-3 py-2 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                  title="Download"
                 >
                   <Download size={16} />
-                </a>
+                </button>
 
                 <button
                   type="button"

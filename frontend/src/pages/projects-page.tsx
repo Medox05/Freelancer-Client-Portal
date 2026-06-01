@@ -626,8 +626,8 @@ export default function ProjectsPage() {
           </div>
         </div>
 
-        <div className="w-full">
-          <table className="w-full table-fixed">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full table-fixed min-w-[900px]">
             <thead className="bg-slate-50 dark:bg-slate-800/50">
               <tr className="text-left">
                 <th className="w-[16%] px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300">

@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Ban,
@@ -9,7 +8,16 @@ import {
   LoaderCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getProjects } from "../services/project-service";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { getDashboardStats } from "../services/dashboard-service";
 
 function formatDateOnly(dateString?: string | null) {
   if (!dateString) return "—";
@@ -34,34 +42,25 @@ function isProjectExpired(dueDate?: string | null, status?: string) {
 }
 
 export default function ClientDashboardPage() {
-  const { data: projects = [], isLoading, isError } = useQuery({
-    queryKey: ["client-projects"],
-    queryFn: getProjects,
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["client-dashboard-stats"],
+    queryFn: getDashboardStats,
   });
 
-  const stats = useMemo(() => {
-    return {
-      total: projects.length,
-      inProgress: projects.filter((p: any) => p.status === "in_progress").length,
-      completed: projects.filter((p: any) => p.status === "completed").length,
-      pending: projects.filter((p: any) => p.status === "pending").length,
-      canceled: projects.filter((p: any) => p.status === "canceled").length,
-    };
-  }, [projects]);
+  const stats = data?.stats || {
+    total_projects: 0,
+    active_projects: 0,
+    completed_projects: 0,
+    canceled_projects: 0,
+    pending_projects: 0,
+  };
 
-  const recentProjects = useMemo(() => {
-    return [...projects].sort((a: any, b: any) => b.id - a.id).slice(0, 5);
-  }, [projects]);
+  const recentProjects = data?.recent_projects || [];
+  const upcomingDeadlines = data?.upcoming_deadlines || [];
+  const chartData = data?.chart_data || [];
 
-  const upcomingDeadlines = useMemo(() => {
-    return [...projects]
-      .filter((p: any) => !!p.due_date)
-      .sort(
-        (a: any, b: any) =>
-          new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-      )
-      .slice(0, 5);
-  }, [projects]);
+  const isDark = document.documentElement.classList.contains("dark");
+  const chartColor = isDark ? "#60a5fa" : "#2563eb";
 
   const getStatusClass = (status: string) => {
     if (status === "completed") {
@@ -114,7 +113,7 @@ export default function ClientDashboardPage() {
               <FolderKanban size={22} />
             </div>
           </div>
-          <p className="mt-6 text-5xl font-bold">{stats.total}</p>
+          <p className="mt-6 text-5xl font-bold">{stats.total_projects}</p>
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -124,7 +123,7 @@ export default function ClientDashboardPage() {
               <LoaderCircle size={22} />
             </div>
           </div>
-          <p className="mt-6 text-5xl font-bold">{stats.inProgress}</p>
+          <p className="mt-6 text-5xl font-bold">{stats.active_projects}</p>
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -134,7 +133,7 @@ export default function ClientDashboardPage() {
               <CheckCircle2 size={22} />
             </div>
           </div>
-          <p className="mt-6 text-5xl font-bold">{stats.completed}</p>
+          <p className="mt-6 text-5xl font-bold">{stats.completed_projects}</p>
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -144,7 +143,7 @@ export default function ClientDashboardPage() {
               <ClipboardList size={22} />
             </div>
           </div>
-          <p className="mt-6 text-5xl font-bold">{stats.pending}</p>
+          <p className="mt-6 text-5xl font-bold">{stats.pending_projects}</p>
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -154,7 +153,55 @@ export default function ClientDashboardPage() {
               <Ban size={22} />
             </div>
           </div>
-          <p className="mt-6 text-5xl font-bold">{stats.canceled}</p>
+          <p className="mt-6 text-5xl font-bold">{stats.canceled_projects}</p>
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-2xl font-semibold mb-6">Spending Over Time</h3>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke={isDark ? "#334155" : "#e2e8f0"}
+              />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: isDark ? "#94a3b8" : "#64748b", fontSize: 13 }}
+                dy={10}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: isDark ? "#94a3b8" : "#64748b", fontSize: 13 }}
+                tickFormatter={(value) => `$${value}`}
+              />
+              <Tooltip
+                cursor={{ fill: isDark ? "#1e293b" : "#f1f5f9" }}
+                contentStyle={{
+                  backgroundColor: isDark ? "#0f172a" : "#ffffff",
+                  borderColor: isDark ? "#334155" : "#e2e8f0",
+                  borderRadius: "16px",
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+                }}
+                itemStyle={{ color: isDark ? "#f8fafc" : "#0f172a", fontWeight: "bold" }}
+                formatter={(value: any) => [`$${Number(value).toLocaleString()}`, "Spending"]}
+              />
+              <Bar
+                dataKey="total"
+                fill={chartColor}
+                radius={[6, 6, 6, 6]}
+                barSize={40}
+              />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
