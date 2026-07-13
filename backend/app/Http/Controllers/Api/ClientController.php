@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Mail\ClientInvitationMail;
 use App\Models\Client;
+use App\Models\Conversation;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -72,27 +73,54 @@ class ClientController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
-            'email' => ['required', 'email', 'max:150', 'unique:users,email'],
+            'email' => ['required', 'email:rfc,dns', 'max:150'],
             'company' => ['nullable', 'string', 'max:150'],
             'phone' => ['nullable', 'string', 'max:50'],
         ], [
             'name.required' => 'Name is required.',
             'email.required' => 'Email is required.',
-            'email.email' => 'Email is invalid.',
-            'email.unique' => 'This email is already taken.',
+            'email.email' => 'This email address does not exist.',
         ]);
 
-        $token = Str::random(64);
+        // Check if the freelancer already has a client with this email
+        $existingClient = Client::where('email', $validated['email'])
+            ->where('created_by', $freelancer->id)
+            ->first();
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make(Str::random(24)),
-            'role' => 'client',
-            'invitation_token' => $token,
-            'invitation_expires_at' => now()->addDays(2),
-            'invitation_accepted_at' => null,
-        ]);
+        if ($existingClient) {
+            return response()->json([
+                'errors' => [
+                    'email' => ['You have already added a client with this email.']
+                ]
+            ], 422);
+        }
+
+        $user = User::where('email', $validated['email'])->first();
+
+        if (!$user) {
+            $token = Str::random(64);
+
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make(Str::random(24)),
+                'role' => 'client',
+                'invitation_token' => $token,
+                'invitation_expires_at' => now()->addDays(2),
+                'invitation_accepted_at' => null,
+            ]);
+
+            try {
+                Mail::to($user->email)->queue(new \App\Mail\ClientInvitationMail($user));
+            } catch (\Exception $e) {
+                $user->delete();
+                return response()->json([
+                    'errors' => [
+                        'email' => ['This email address does not exist or cannot receive emails.']
+                    ]
+                ], 422);
+            }
+        }
 
         $client = Client::create([
             'user_id' => $user->id,
@@ -103,7 +131,11 @@ class ClientController extends Controller
             'phone' => $validated['phone'] ?? null,
         ]);
 
-        Mail::to($user->email)->send(new ClientInvitationMail($user));
+        // Auto-create a conversation so the client appears in chat immediately
+        Conversation::firstOrCreate([
+            'freelancer_id' => $freelancer->id,
+            'client_id'     => $user->id,
+        ]);
 
         return response()->json([
             'message' => 'Client created and invitation sent successfully.',
@@ -117,7 +149,7 @@ class ClientController extends Controller
                 'phone' => $client->phone,
                 'created_at' => $client->created_at,
                 'updated_at' => $client->updated_at,
-                'invitation_status' => 'pending',
+                'invitation_status' => ($user->invitation_accepted_at || $user->role === 'freelancer') ? 'accepted' : 'pending',
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
@@ -140,23 +172,63 @@ class ClientController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
-            'email' => ['required', 'email', 'max:150', 'unique:clients,email,' . $client->id],
+            'email' => ['required', 'email:rfc,dns', 'max:150'],
             'company' => ['nullable', 'string', 'max:150'],
             'phone' => ['nullable', 'string', 'max:50'],
         ], [
             'name.required' => 'Name is required.',
             'email.required' => 'Email is required.',
-            'email.email' => 'Email is invalid.',
-            'email.unique' => 'This email is already taken.',
+            'email.email' => 'This email address does not exist.',
         ]);
 
-        $client->update($validated);
+        $existingClient = Client::where('email', $validated['email'])
+            ->where('created_by', $freelancer->id)
+            ->where('id', '!=', $client->id)
+            ->first();
 
-        if ($client->user) {
-            $client->user->update([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-            ]);
+        if ($existingClient) {
+            return response()->json([
+                'errors' => [
+                    'email' => ['You have already added a client with this email.']
+                ]
+            ], 422);
+        }
+
+        if ($client->email !== $validated['email']) {
+            $user = User::where('email', $validated['email'])->first();
+            
+            if (!$user) {
+                $token = Str::random(64);
+                $user = User::create([
+                    'name' => $validated['name'],
+                    'email' => $validated['email'],
+                    'password' => Hash::make(Str::random(24)),
+                    'role' => 'client',
+                    'invitation_token' => $token,
+                    'invitation_expires_at' => now()->addDays(2),
+                    'invitation_accepted_at' => null,
+                ]);
+                try {
+                    Mail::to($user->email)->queue(new \App\Mail\ClientInvitationMail($user));
+                } catch (\Exception $e) {
+                    $user->delete();
+                    return response()->json([
+                        'errors' => [
+                            'email' => ['This email address does not exist or cannot receive emails.']
+                        ]
+                    ], 422);
+                }
+            }
+            
+            $client->update(array_merge($validated, ['user_id' => $user->id]));
+        } else {
+            $client->update($validated);
+
+            if ($client->user && $client->user->role === 'client') {
+                $client->user->update([
+                    'name' => $validated['name']
+                ]);
+            }
         }
 
         $client->load('user:id,name,email,invitation_token,invitation_expires_at,invitation_accepted_at');
@@ -228,7 +300,7 @@ class ClientController extends Controller
             'invitation_accepted_at' => null,
         ]);
 
-        Mail::to($client->user->email)->send(new ClientInvitationMail($client->user));
+        Mail::to($client->user->email)->queue(new ClientInvitationMail($client->user));
 
         return response()->json([
             'message' => 'Invitation resent successfully.',

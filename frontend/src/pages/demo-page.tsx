@@ -11,32 +11,36 @@ type Slide = {
   description: string;
 };
 
-type ViewCategory = "freelancer" | "client" | "details";
+type ViewCategory = "overview" | "freelancer" | "client" | "details";
 
 const slidesData: Record<ViewCategory, Slide[]> = {
+  overview: [
+    { src: "/demo4.png", title: "Landing Page", description: "A premium, fully responsive landing page with modern theme toggling and interactive feature sections." }
+  ],
   freelancer: [
-    { src: "/demo1.png", title: "Freelancer Dashboard", description: "Get a bird's-eye view of your active projects, deadlines, and total earnings." },
-    { src: "/demo2.png", title: "Manage Clients", description: "Easily onboard new clients, view their details, and maintain your customer relationships." },
-    { src: "/demo3.png", title: "Projects List", description: "Track your active projects, budgets, and their current completion status." },
-    { src: "/demo5.png", title: "Integrated Chat", description: "Communicate in real-time with clients through built-in messaging threads." },
-    { src: "/demo6.png", title: "Call Management", description: "Keep track of your communication history and quickly start new calls." },
-    { src: "/demo7.png", title: "Video Calls", description: "Host real-time face-to-face video meetings with clients seamlessly." },
+    { src: "/demo1.png", title: "Freelancer Dashboard", description: "Track your clients, active projects, and total earnings with a clean, summarized statistical view." },
+    { src: "/demo2.png", title: "Manage Clients", description: "Easily onboard clients, view their profiles, and manage active invitations to collaborate." },
+    { src: "/demo3.png", title: "Projects List", description: "A centralized dashboard to search and monitor all your client projects, budgets, and status lifecycles." },
+    { src: "/demo16.png", title: "Meetings Planner", description: "Plan, schedule, and join interactive video call meetings with integrated calendar controls." }
   ],
   client: [
-    { src: "/demo11.png", title: "Client Dashboard", description: "A clean interface summarizing active projects and unread messages." },
-    { src: "/demo12.png", title: "My Projects", description: "Easily track project progress, status labels, and delivery updates." },
-    { src: "/demo13.png", title: "File Management", description: "Easily access, download, and manage files shared by your freelancer." },
+    { src: "/demo14.png", title: "Client Dashboard", description: "A simplified, client-facing portal displaying active project statuses, overall budgets, and quick-access metrics." }
   ],
   details: [
-    { src: "/demo8.png", title: "Project Overview", description: "Get instant clarity on project budgets, deadlines, and overall progress." },
-    { src: "/demo9.png", title: "File Sharing", description: "Securely upload, organize, and manage all your project deliverables and assets." },
-    { src: "/demo10.png", title: "Milestones Tracking", description: "Break down projects into clear phases and check them off as they are completed." },
+    { src: "/demo8.png", title: "Project Overview", description: "Drill down into specific project details, deadlines, target budgets, and real-time status updates." },
+    { src: "/demo9.png", title: "File Sharing", description: "Securely upload and share deliverables, assets, and project files between freelancers and clients." },
+    { src: "/demo10.png", title: "Milestones Tracking", description: "Break projects down into clear milestones, check deliverables, and track progression step-by-step." },
+    { src: "/demo11.png", title: "Invoices & Billing", description: "Create, view, and track detailed project invoices with current payment and due statuses." },
+    { src: "/demo12.png", title: "E-Contract Management", description: "Draft, review, and legally sign digital work agreements securely online." },
+    { src: "/demo5.png", title: "Instant Messaging", description: "Communicate directly in real-time with clients through built-in workspace chat rooms." },
+    { src: "/demo6.png", title: "Call Manager", description: "Access call logs, view available contacts, and initiate quick audio/video calls." },
+    { src: "/demo7.png", title: "Video Calling", description: "Join high-definition, peer-to-peer audio and video calls directly from your browser without plugins." }
   ]
 };
 
 export default function DemoPage() {
   const {  toggleTheme } = useTheme();
-  const [activeCategory, setActiveCategory] = useState<ViewCategory>("freelancer");
+  const [activeCategory, setActiveCategory] = useState<ViewCategory>("overview");
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const currentSlides = slidesData[activeCategory];
@@ -80,7 +84,7 @@ export default function DemoPage() {
           </Link>
         </div>
       </header>
-
+      
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 max-w-7xl mx-auto w-full">
         
@@ -94,7 +98,7 @@ export default function DemoPage() {
 
         {/* Category Selector */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-10 p-1 bg-slate-200/50 dark:bg-slate-800/50 rounded-full">
-          {(['freelancer', 'client', 'details'] as ViewCategory[]).map((cat) => (
+          {(['overview', 'freelancer', 'client', 'details'] as ViewCategory[]).map((cat) => (
             <button
               key={cat}
               onClick={() => handleCategoryChange(cat)}
@@ -104,7 +108,7 @@ export default function DemoPage() {
                   : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50"
               }`}
             >
-              {cat === 'freelancer' ? "Freelancer View" : cat === 'client' ? "Client View" : "Project Details"}
+              {cat === 'overview' ? "Overview" : cat === 'freelancer' ? "Freelancer View" : cat === 'client' ? "Client View" : "Project Details"}
             </button>
           ))}
         </div>

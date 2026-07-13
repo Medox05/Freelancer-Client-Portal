@@ -13,10 +13,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->prepend(\App\Http\Middleware\TokenFromQuery::class);
         $middleware->alias([
             'update.last.seen' => UpdateLastSeen::class,
+            'token.query' => \App\Http\Middleware\TokenFromQuery::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*/download')) {
+                $urlWithoutToken = preg_replace('/([?&])token=[^&]+(&|$)/', '$1', $request->fullUrl());
+                $urlWithoutToken = rtrim($urlWithoutToken, '?&');
+                $urlPathOnly = str_replace(url('/'), '', $urlWithoutToken);
+                
+                return redirect(env('FRONTEND_URL', 'http://localhost:5173') . '/preview?url=' . urlencode($urlPathOnly));
+            }
+        });
     })->create();

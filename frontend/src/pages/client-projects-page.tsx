@@ -181,8 +181,8 @@ export default function ClientProjectsPage() {
             </p>
           </div>
         ) : (
-          <div className="w-full">
-            <table className="w-full table-fixed">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full table-fixed min-w-[1000px]">
               <thead className="bg-slate-50 dark:bg-slate-800/50">
                 <tr className="text-left">
                   <th className="w-[20%] px-4 py-4 text-sm">Title</th>

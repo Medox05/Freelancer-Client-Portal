@@ -19,6 +19,7 @@ class User extends Authenticatable
         'invitation_expires_at',
         'invitation_accepted_at',
         'last_seen_at',
+        'email_verified_at',
     ];
 
     protected $hidden = [
@@ -26,10 +27,9 @@ class User extends Authenticatable
         'remember_token',
     ];
     protected $casts = [
-    'email_verified_at' => 'datetime',
-    'last_seen_at' => 'datetime',
-    'invitation_expires_at' => 'datetime',
-    'invitation_accepted_at' => 'datetime',
-    'password' => 'hashed',
-];
+        'email_verified_at' => 'datetime',
+        'last_seen_at' => 'datetime',
+        'invitation_expires_at' => 'datetime',
+        'invitation_accepted_at' => 'datetime',
+    ];
 }

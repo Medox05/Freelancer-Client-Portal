@@ -12,63 +12,7 @@ body {
   margin: 0;
   font-family: Inter, system-ui, sans-serif;
 }
-/* Calendar container */
-.clientflow-datepicker {
-  border: 1px solid rgb(51 65 85);
-  border-radius: 1rem;
-  overflow: hidden;
-  background: rgb(15 23 42);
-  color: white;
-  font-family: Inter, system-ui, sans-serif;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.35);
-}
 
-/* Header */
-.clientflow-datepicker .react-datepicker__header {
-  background: rgb(15 23 42);
-  border-bottom: 1px solid rgb(51 65 85);
-}
-
-.clientflow-datepicker .react-datepicker__current-month {
-  color: white;
-  font-weight: 600;
-}
-
-/* Week days (Su Mo Tu...) */
-.clientflow-datepicker .react-datepicker__day-name {
-  color: rgb(148 163 184); /* slate-400 */
-}
-
-/* DAYS COLOR FIX */
-.clientflow-datepicker .react-datepicker__day {
-  color: rgb(226 232 240); /* slate-200 */
-  font-weight: 500;
-}
-
-/* Hover */
-.clientflow-datepicker .react-datepicker__day:hover {
-  background: rgba(59,130,246,0.25);
-  border-radius: 6px;
-}
-
-/* Selected day */
-.clientflow-datepicker .react-datepicker__day--selected,
-.clientflow-datepicker .react-datepicker__day--keyboard-selected {
-  background: rgb(59,130,246);
-  color: white;
-  border-radius: 6px;
-}
-
-/* Today */
-.clientflow-datepicker .react-datepicker__day--today {
-  border: 1px solid rgb(59,130,246);
-  border-radius: 6px;
-}
-
-/* navigation arrows */
-.clientflow-datepicker .react-datepicker__navigation-icon::before {
-  border-color: white;
-}
 .clientflow-daypicker {
   --rdp-accent-color: rgb(59 130 246);
   --rdp-cell-size: 40px;
@@ -134,4 +78,75 @@ body {
 .dark .clientflow-daypicker .rdp-button_previous,
 .dark .clientflow-daypicker .rdp-button_next {
   color: white;
+}
+
+/* @media print styles for formal legal contracts */
+@media print {
+  .no-print,
+  nav,
+  header,
+  aside,
+  footer,
+  button,
+  .btn,
+  .tabs,
+  .sidebar,
+  .topbar,
+  [role="tablist"],
+  .no-print-wrapper,
+  .toast,
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+
+  /* Reset all parent container heights and overflows to allow normal multi-page flow */
+  html, body, #root,
+  main,
+  section,
+  div:not(.printable-contract-page *):not(.printable-contract-page) {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: #000000 !important;
+  }
+
+  /* Contract page styles - static positioning to allow browser pagination */
+  .printable-contract-page {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 3rem !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+    color: #000000 !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  .printable-contract-page h1,
+  .printable-contract-page h2,
+  .printable-contract-page h3,
+  .printable-contract-page h4 {
+    color: #000000 !important;
+    page-break-after: avoid;
+  }
+
+  .printable-contract-page p,
+  .printable-contract-page div {
+    color: #000000 !important;
+    line-height: 1.6 !important;
+  }
 }

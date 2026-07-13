@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Lock, Mail, UserPlus, User } from "lucide-react";
+import { Lock, Mail, UserPlus, User, ArrowLeft } from "lucide-react";
 import api from "../lib/axios";
 import { setToken } from "../lib/auth";
 import ThemeToggle from "../components/theme-toggle";
@@ -34,16 +34,22 @@ export default function RegisterPage() {
         role: role
       });
 
-      const token = res.data.token;
-      const user = res.data.user;
+      const data = res.data;
 
-      setToken(token);
-      localStorage.setItem("user", JSON.stringify(user));
+      if (data.require_verification && data.email) {
+        navigate(`/verify-email?email=${encodeURIComponent(data.email)}`);
+        return;
+      }
 
-      if (user.role === "client") {
-        navigate("/client/dashboard");
-      } else {
-        navigate("/dashboard");
+      if (data.token && data.user) {
+        setToken(data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        if (data.user.role === "client") {
+          navigate("/client/dashboard");
+        } else {
+          navigate("/dashboard");
+        }
       }
     } catch (err: any) {
       const errors = err?.response?.data?.errors;
@@ -187,6 +193,16 @@ export default function RegisterPage() {
             Login
           </Link>
         </p>
+
+        <div className="mt-6 flex justify-center">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          >
+            <ArrowLeft size={16} />
+            Back to Home Page
+          </Link>
+        </div>
       </div>
     </div>
   );

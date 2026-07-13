@@ -9,9 +9,18 @@ import {
   FolderKanban,
   ListChecks,
   User,
+  Receipt,
+  MessageSquare,
+  Download,
+  Eye,
+  FileSignature,
 } from "lucide-react";
 import { getProjectById } from "../services/project-service";
 import api from "../lib/axios";
+import ProjectInvoicesManager from "../components/projects/project-invoices-manager";
+import FileFeedbackViewer from "../components/projects/file-feedback-viewer";
+import ProjectContractsManager from "../components/projects/project-contracts-manager";
+import { handleFileDownload, handleFileOpen } from "../lib/download";
 
 function formatDateOnly(date?: string | null) {
   if (!date) return "-";
@@ -65,6 +74,8 @@ type ProjectFile = {
   file_size: number;
   created_at: string;
   download_url: string;
+  mime_type?: string;
+  file_url?: string;
 };
 
 type Milestone = {
@@ -85,7 +96,7 @@ async function getProjectMilestones(projectId: number): Promise<Milestone[]> {
   return data;
 }
 
-type TabType = "overview" | "files" | "milestones";
+type TabType = "overview" | "files" | "milestones" | "invoices" | "contracts";
 
 export default function ClientProjectDetailsPage() {
   const { id } = useParams();
@@ -94,15 +105,16 @@ export default function ClientProjectDetailsPage() {
   const queryTab = searchParams.get("tab");
 
   const initialTab: TabType =
-    queryTab === "files" || queryTab === "milestones" || queryTab === "overview"
+    queryTab === "files" || queryTab === "milestones" || queryTab === "overview" || queryTab === "invoices" || queryTab === "contracts"
       ? (queryTab as TabType)
       : "overview";
 
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [expanded, setExpanded] = useState(false);
+  const [selectedReviewFile, setSelectedReviewFile] = useState<ProjectFile | null>(null);
 
   useEffect(() => {
-    if (queryTab === "files" || queryTab === "milestones" || queryTab === "overview") {
+    if (queryTab === "files" || queryTab === "milestones" || queryTab === "overview" || queryTab === "invoices" || queryTab === "contracts") {
       setActiveTab(queryTab as TabType);
     }
   }, [queryTab]);
@@ -169,8 +181,19 @@ export default function ClientProjectDetailsPage() {
         : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
     }`;
 
-  function formatFileSize(_file_size: number): import("react").ReactNode {
-    throw new Error("Function not implemented.");
+  function formatFileSize(size?: number) {
+    if (!size) return "0 B";
+
+    const units = ["B", "KB", "MB", "GB"];
+    let value = size;
+    let i = 0;
+
+    while (value >= 1024 && i < units.length - 1) {
+      value /= 1024;
+      i++;
+    }
+
+    return `${value.toFixed(1)} ${units[i]}`;
   }
 
   return (
@@ -204,6 +227,16 @@ export default function ClientProjectDetailsPage() {
         <button onClick={() => changeTab("milestones")} className={tabClass("milestones")}>
           <ListChecks size={16} />
           Milestones
+        </button>
+
+        <button onClick={() => changeTab("invoices")} className={tabClass("invoices")}>
+          <Receipt size={16} />
+          Invoices
+        </button>
+
+        <button onClick={() => changeTab("contracts")} className={tabClass("contracts")}>
+          <FileSignature size={16} />
+          Contracts
         </button>
       </div>
 
@@ -291,6 +324,9 @@ export default function ClientProjectDetailsPage() {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">Project Files</h2>
           <p className="mt-1 text-slate-500 dark:text-slate-400">Download files shared by the freelancer.</p>
+          <p className="mt-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+            💡 Tip: Click "Feedback" on any file to open a live discussion thread and leave messages!
+          </p>
 
           <div className="mt-6 space-y-3">
             {files.length === 0 ? (
@@ -303,7 +339,34 @@ export default function ClientProjectDetailsPage() {
                     <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{formatFileSize(file.file_size)} • {formatDateOnly(file.created_at)}</p>
                   </div>
 
-                  <a href={file.download_url} className="inline-flex items-center gap-2 rounded-xl border border-blue-600 bg-blue-100 px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-200 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">Download</a>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedReviewFile(file)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-indigo-500 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-600 transition hover:bg-indigo-100 dark:border-indigo-500/40 dark:bg-indigo-950/20 dark:text-indigo-300 dark:hover:bg-indigo-950/40 cursor-pointer"
+                    >
+                      <MessageSquare size={16} />
+                      Feedback
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleFileOpen(file.download_url, file.file_name)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+                    >
+                      <Eye size={16} />
+                      Open
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleFileDownload(file.download_url, file.file_name)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-blue-600 bg-blue-100 px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-200 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20 cursor-pointer"
+                    >
+                      <Download size={16} />
+                      Download
+                    </button>
+                  </div>
                 </div>
               ))
             )}
@@ -338,6 +401,24 @@ export default function ClientProjectDetailsPage() {
             )}
           </div>
         </div>
+      )}
+
+      {activeTab === "invoices" && (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <ProjectInvoicesManager projectId={project.id} defaultAmount={project.budget ?? undefined} />
+        </div>
+      )}
+
+      {activeTab === "contracts" && (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <ProjectContractsManager projectId={project.id} />
+        </div>
+      )}
+      {selectedReviewFile && (
+        <FileFeedbackViewer
+          file={selectedReviewFile}
+          onClose={() => setSelectedReviewFile(null)}
+        />
       )}
     </div>
   );

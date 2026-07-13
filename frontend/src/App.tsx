@@ -4,9 +4,7 @@ import api from "./lib/axios";
 
 export default function App() {
   useEffect(() => {
-    const interval = setInterval(() => {
-      api.get("/me").catch(() => {});
-    }, 10000);
+
 
     // Send email when app is closed
     const handleBeforeUnload = () => {
@@ -23,7 +21,7 @@ export default function App() {
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
-      clearInterval(interval);
+
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);

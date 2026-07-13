@@ -67,6 +67,7 @@ export default function ClientsPage() {
   const { data: clients = [], isLoading } = useQuery<ClientItem[]>({
     queryKey: ["clients"],
     queryFn: getClients,
+    refetchInterval: 5000, // 5s
   });
 
   const filteredClients = useMemo(() => {
@@ -384,13 +385,13 @@ export default function ClientsPage() {
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label className="mb-2 block text-sm text-slate-600 dark:text-slate-300">
-              Name
+              Name *
             </label>
             <input
               value={form.name}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, name: e.target.value }))
-              }
+              } required
               placeholder="Client Name"
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none focus:border-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-white"
             />
@@ -398,7 +399,7 @@ export default function ClientsPage() {
 
           <div>
             <label className="mb-2 block text-sm text-slate-600 dark:text-slate-300">
-              Email
+              Email *
             </label>
             <input
               type="email"
@@ -406,6 +407,7 @@ export default function ClientsPage() {
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, email: e.target.value }))
               }
+              required
               placeholder="client@email.com"
               className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none focus:border-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-white"
             />

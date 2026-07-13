@@ -12,14 +12,25 @@ use App\Http\Controllers\Api\ProjectCommentController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ProjectFileController;
 use App\Http\Controllers\Api\VideoCallController;
+use App\Http\Controllers\Api\MeetingController;
+use App\Http\Controllers\Api\ContractController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/client/create-password', [AuthController::class, 'createPassword']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
+Route::post('/resend-verification', [AuthController::class, 'resendVerification']);
+Route::post('/webhooks/stripe', [App\Http\Controllers\Api\InvoiceController::class, 'handleWebhook']);
+Route::post('/webhooks/stripe-mock', [App\Http\Controllers\Api\InvoiceController::class, 'handleMockPayment']);
 
-Route::middleware(['auth:sanctum', 'update.last.seen'])->group(function () {
+Route::middleware([
+    'token.query',
+    'auth:sanctum'
+])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/app-closed', [AuthController::class, 'appClosed']);
@@ -45,6 +56,12 @@ Route::middleware(['auth:sanctum', 'update.last.seen'])->group(function () {
 
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 
+    // Meetings
+    Route::get('/meetings', [MeetingController::class, 'index']);
+    Route::post('/meetings', [MeetingController::class, 'store']);
+    Route::put('/meetings/{meeting}/status', [MeetingController::class, 'updateStatus']);
+    Route::delete('/meetings/{meeting}', [MeetingController::class, 'destroy']);
+
     Route::get('/clients', [ClientController::class, 'index']);
     Route::post('/clients', [ClientController::class, 'store']);
     Route::get('/clients/{client}', [ClientController::class, 'show']);
@@ -62,12 +79,30 @@ Route::middleware(['auth:sanctum', 'update.last.seen'])->group(function () {
     Route::post('/projects/{project}/files', [ProjectFileController::class, 'store']);
     Route::delete('/project-files/{projectFile}', [ProjectFileController::class, 'destroy']);
     Route::get('/project-files/{projectFile}/download', [ProjectFileController::class, 'download']);
+    Route::get('/project-files/{projectFile}/annotations', [\App\Http\Controllers\Api\ProjectFileAnnotationController::class, 'index']);
+    Route::post('/project-files/{projectFile}/annotations', [\App\Http\Controllers\Api\ProjectFileAnnotationController::class, 'store']);
+    Route::delete('/project-annotations/{annotation}', [\App\Http\Controllers\Api\ProjectFileAnnotationController::class, 'destroy']);
+    Route::get('/project-annotations/{annotation}/download', [\App\Http\Controllers\Api\ProjectFileAnnotationController::class, 'download']);
 
     Route::get('/projects/{project}/comments', [ProjectCommentController::class, 'index']);
     Route::post('/projects/{project}/comments', [ProjectCommentController::class, 'store']);
     Route::delete('/project-comments/{projectComment}', [ProjectCommentController::class, 'destroy']);
 
 
+    Route::get('/projects/{project}/invoices', [App\Http\Controllers\Api\InvoiceController::class, 'index']);
+    Route::post('/projects/{project}/invoices', [App\Http\Controllers\Api\InvoiceController::class, 'store']);
+    Route::put('/projects/{project}/invoices/{invoice}/status', [App\Http\Controllers\Api\InvoiceController::class, 'updateStatus']);
+    Route::get('/projects/{project}/invoices/{invoice}/download', [App\Http\Controllers\Api\InvoiceController::class, 'download']);
+    Route::delete('/projects/{project}/invoices/{invoice}', [App\Http\Controllers\Api\InvoiceController::class, 'destroy']);
+    Route::post('/projects/{project}/invoices/{invoice}/stripe-session', [App\Http\Controllers\Api\InvoiceController::class, 'createCheckoutSession']);
+
+    // Contracts
+    Route::get('/projects/{project}/contracts', [ContractController::class, 'index']);
+    Route::post('/projects/{project}/contracts', [ContractController::class, 'store']);
+    Route::get('/contracts/{contract}', [ContractController::class, 'show']);
+    Route::put('/contracts/{contract}', [ContractController::class, 'update']);
+    Route::delete('/contracts/{contract}', [ContractController::class, 'destroy']);
+    Route::post('/contracts/{contract}/sign', [ContractController::class, 'sign']);
 
     Route::get('/projects/{project}/milestones', [MilestoneController::class, 'index']);
     Route::post('/projects/{project}/milestones', [MilestoneController::class, 'store']);
@@ -95,6 +130,7 @@ Route::middleware(['auth:sanctum', 'update.last.seen'])->group(function () {
 
     Route::get('/video-calls/available-users', [VideoCallController::class, 'getAvailableUsers']);
     Route::get('/video-calls/active', [VideoCallController::class, 'getActiveCall']);
+    Route::post('/video-calls/cleanup', [VideoCallController::class, 'cleanupActiveCalls']);
     Route::get('/video-calls/incoming', [VideoCallController::class, 'getIncomingCalls']);
     Route::post('/video-calls/initiate', [VideoCallController::class, 'initiateCall']);
     Route::post('/video-calls/{id}/accept', [VideoCallController::class, 'acceptCall']);

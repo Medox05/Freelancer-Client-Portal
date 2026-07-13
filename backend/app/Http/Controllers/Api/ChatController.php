@@ -23,63 +23,40 @@ class ChatController extends Controller
     {
         $user = $request->user();
 
-        // ✅ Ensure conversations exist
-        if ($user->role === 'freelancer') {
-            $clients = Client::where('created_by', $user->id)
-                ->with('user')
-                ->get();
-
-            foreach ($clients as $client) {
-                if ($client->user_id) {
-                    Conversation::firstOrCreate([
-                        'freelancer_id' => $user->id,
-                        'client_id' => $client->user_id,
-                    ]);
-                }
-            }
-        }
-
-        if ($user->role === 'client') {
-            $client = Client::where('user_id', $user->id)->first();
-
-            if ($client) {
-                Conversation::firstOrCreate([
-                    'freelancer_id' => $client->created_by,
-                    'client_id' => $user->id,
-                ]);
-            }
-        }
-
-        // ✅ Load conversations
+        // ✅ Load conversations with unread count and latest message
         $conversations = Conversation::with([
             'freelancer',
             'client',
             'latestMessage'
         ])
-        ->where('freelancer_id', $user->id)
-        ->orWhere('client_id', $user->id)
-        ->latest()
+        ->withCount(['messages as unreadCount' => function ($query) use ($user) {
+            $query->where('sender_id', '!=', $user->id)
+                  ->where('is_read', false);
+        }])
+        ->where(function($query) use ($user) {
+            $query->where('freelancer_id', $user->id)
+                  ->orWhere('client_id', $user->id);
+        })
+        ->latest('updated_at')
         ->get();
 
         return $conversations->map(function ($conversation) use ($user) {
-
             $otherUser = $conversation->freelancer_id === $user->id
                 ? $conversation->client
                 : $conversation->freelancer;
-
-            $unreadCount = Message::where('conversation_id', $conversation->id)
-                ->where('sender_id', '!=', $user->id)
-                ->where('is_read', false)
-                ->count();
 
             return [
                 'id' => $conversation->id,
                 'name' => $otherUser?->name,
                 'email' => $otherUser?->email,
                 'roleLabel' => $otherUser?->role === 'freelancer' ? 'Freelancer' : 'Client',
-                'lastMessage' => $conversation->latestMessage?->message ?? '',
+                'lastMessage' => $conversation->latestMessage
+                    ? ($conversation->latestMessage->message_type === 'file' && empty($conversation->latestMessage->message)
+                        ? '📎 Attachment'
+                        : $conversation->latestMessage->message)
+                    : '',
                 'lastTime' => $conversation->latestMessage?->created_at,
-                'unreadCount' => $unreadCount,
+                'unreadCount' => $conversation->unreadCount,
                 'last_seen_at' => $otherUser?->last_seen_at,
             ];
         });
@@ -196,9 +173,28 @@ class ChatController extends Controller
             $otherUser = User::find($otherUserId);
             
             if ($otherUser) {
-                $firstMessageContent = $request->filled('message') ? $request->message : 'Shared a file';
-                $chatUrl = env('FRONTEND_URL', 'http://localhost:5173') . '/chat'; // URL for the frontend chat
-                Mail::to($otherUser->email)->queue(new NewMessageMail($user->name, $firstMessageContent, $chatUrl));
+                // Check if an unread notification already exists to avoid spamming
+                $existingNotification = \App\Models\Notification::where('user_id', $otherUser->id)
+                    ->where('conversation_id', $conversation->id)
+                    ->where('is_read', false)
+                    ->first();
+
+                if (!$existingNotification) {
+                    \App\Models\Notification::create([
+                        'user_id' => $otherUser->id,
+                        'title' => "New Message from {$user->name}",
+                        'message' => $request->filled('message') ? substr($request->message, 0, 50) . (strlen($request->message) > 50 ? '...' : '') : 'Shared a file',
+                        'type' => 'new_message',
+                        'conversation_id' => $conversation->id
+                    ]);
+                }
+
+                $isOffline = !$otherUser->last_seen_at || $otherUser->last_seen_at < now()->subMinutes(2);
+                if ($isOffline) {
+                    $firstMessageContent = $request->filled('message') ? $request->message : 'Shared a file';
+                    $chatUrl = env('FRONTEND_URL', 'http://localhost:5173') . '/chat'; // URL for the frontend chat
+                    Mail::to($otherUser->email)->queue(new NewMessageMail($user->name, $firstMessageContent, $chatUrl));
+                }
             }
         }
 

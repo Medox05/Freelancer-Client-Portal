@@ -1,6 +1,6 @@
 import { motion, type Variants } from "framer-motion";
 import { Link } from "react-router-dom";
-import { MessageSquare, FolderKanban, FileText, Target, ChevronRight, Zap } from "lucide-react";
+import { MessageSquare, FolderKanban, FileText, Target, ChevronRight, Zap, Calendar, Plus, ChevronLeft, Video, User, Trash2 } from "lucide-react";
 import { useTheme } from "../lib/theme";
 import ThemeToggle from "../components/theme-toggle";
 
