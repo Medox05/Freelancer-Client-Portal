@@ -1,6 +1,6 @@
 # 💼 Portail Freelance-Client
 
-Un portail complet et en temps réel de gestion de projet entre Freelances et Clients, conçu comme Projet de Fin d'Études (PFE). Cette plateforme professionnelle facilite la collaboration en direct grâce à un suivi de projet intégré, une messagerie instantanée, le partage de documents, des annotations en direct sur les fichiers, la signature électronique de contrats, la facturation/paiement via Stripe, et des visioconférences Peer-to-Peer intégrées.
+Un portail complet et en temps réel de gestion de projet entre Freelances et Clients, conçu comme Projet de Fin d'Études (PFE). Cette plateforme professionnelle facilite la collaboration en direct [...]
 
 ---
 
@@ -50,7 +50,7 @@ La plateforme s'appuie sur une architecture moderne et découplée :
 
 ### 3. Communication en Temps Réel
 *   **Messagerie instantanée :** Canaux de discussion privés avec partage d'images et de documents.
-*   **Appels vidéo WebRTC :** Appels vidéo/audio P2P intégrés via PeerJS, ne nécessitant aucun plug-in externe. Fonctionnalités incluses : notification d'appel entrant, gestion des statuts (sonnerie, accepté, rejeté) et historique des appels.
+*   **Appels vidéo WebRTC :** Appels vidéo/audio P2P intégrés via PeerJS, ne nécessitant aucun plug-in externe. Fonctionnalités incluses : notification d'appel entrant, gestion des statuts ([...]
 *   **Indicateur de présence :** Suivi de l'activité en temps réel grâce aux pings (`/presence/ping`), affichant le statut connecté ou la dernière heure de connexion.
 
 ### 4. Partage de Fichiers & Annotations Visuelles
@@ -245,7 +245,7 @@ Freelancer-Client-Portal/
 ## 📞 Support & Contact
 
 For questions or support, please reach out to:
-- **Email:** medox05@example.com
+- **Email:** ounajmamhamed@gmail.com
 - **GitHub:** [Medox05](https://github.com/Medox05)
 
 ---
