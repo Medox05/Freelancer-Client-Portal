@@ -141,3 +141,121 @@ La plateforme s'appuie sur une architecture moderne et découplée :
 *   **Visioconférence Peer-to-Peer :** Module d'appel vidéo et audio en temps réel basé sur WebRTC (via PeerJS), sans plug-in requis.
     ![Appels Vidéo WebRTC](frontend/public/demo7.png)
 
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+* **React** (Vite) - Fast, modern UI development
+* **TypeScript** - Type-safe development
+* **Tailwind CSS** - Utility-first styling
+* **Framer Motion** - Smooth animations and transitions
+* **PeerJS / WebRTC** - Real-time video and audio communication
+* **React Query** - Efficient data fetching and state management
+* **Axios** - HTTP client for API requests
+* **Socket.io** - Real-time messaging and notifications
+
+### Backend
+* **Laravel** (PHP Framework) - Robust backend architecture
+* **MySQL** - Reliable database management
+* **Laravel Sanctum** - API authentication and token management
+* **Laravel Queues** - Asynchronous task processing
+* **Pusher / Laravel Broadcasting** - Real-time event broadcasting
+* **Laravel Validation** - Form and data validation
+* **Eloquent ORM** - Database interaction
+
+### Key Technologies
+* **WebRTC** - Peer-to-peer communication
+* **JWT** - Secure token authentication
+* **RESTful API** - Clean API design
+* **Docker** - Containerization (optional)
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js (v16+)
+- PHP 8.0+
+- MySQL 5.7+
+- Composer
+
+### Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Backend Setup
+```bash
+cd backend
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan serve
+```
+
+---
+
+## 📋 Project Structure
+
+```
+Freelancer-Client-Portal/
+├── frontend/                 # React + Vite frontend
+│   ├── src/
+│   │   ├── components/      # Reusable components
+│   │   ├── pages/           # Page components
+│   │   ├── services/        # API services
+│   │   ├── hooks/           # Custom hooks
+│   │   └── utils/           # Utility functions
+│   └── public/              # Static assets
+│
+├── backend/                  # Laravel backend
+│   ├── app/
+│   │   ├── Models/          # Database models
+│   │   ├── Controllers/     # API controllers
+│   │   ├── Requests/        # Form requests
+│   │   └── Services/        # Business logic
+│   ├── routes/              # API routes
+│   ├── database/
+│   │   ├── migrations/      # Database migrations
+│   │   └── seeders/         # Database seeders
+│   └── config/              # Configuration files
+│
+└── screenshots/             # Project screenshots
+```
+
+---
+
+## 🔐 Security Features
+
+- End-to-end encryption for messages
+- Secure file uploads with virus scanning
+- HTTPS/SSL encryption
+- CSRF protection
+- SQL injection prevention
+- XSS protection
+- Rate limiting on APIs
+- Two-factor authentication (2FA)
+
+---
+
+## 📞 Support & Contact
+
+For questions or support, please reach out to:
+- **Email:** medox05@example.com
+- **GitHub:** [Medox05](https://github.com/Medox05)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## 🎓 About
+
+This project was developed as a *Projet de Fin d'Études* (Final Studies Project) demonstrating full-stack web development, real-time communication, and modern software architecture principles.
