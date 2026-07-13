@@ -246,6 +246,7 @@ Freelancer-Client-Portal/
 
 For questions or support, please reach out to:
 - **Email:** ounajmamhamed@gmail.com
+- **Phone:** +212 6 88 60 77 35
 - **GitHub:** [Medox05](https://github.com/Medox05)
 
 ---
